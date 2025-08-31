@@ -2,110 +2,133 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>ChatFlow — Realtime (Supabase)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body{font-family:'Inter',sans-serif}
-    /* sin animaciones: NO usamos clases animate- ni transition innecesarias en los mensajes */
+    /* Evitamos animaciones para insertar mensajes */
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen">
-  <div class="flex h-screen max-w-7xl mx-auto">
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen text-white">
+  <!-- Topbar (visible en móvil) -->
+  <header class="md:hidden sticky top-0 z-40 bg-black/30 backdrop-blur border-b border-white/10">
+    <div class="flex items-center justify-between px-4 py-3">
+      <button id="toggleSidebar" class="p-2 rounded-xl bg-white/10">☰</button>
+      <h1 class="font-semibold">ChatFlow</h1>
+      <a id="openRoomLink" class="p-2 rounded-xl bg-white/10" title="Abrir enlace">🔗</a>
+    </div>
+  </header>
+
+  <div class="flex h-[calc(100dvh)] md:h-screen max-w-7xl mx-auto">
     <!-- Sidebar -->
-    <aside class="w-80 bg-white/10 backdrop-blur-lg border-r border-white/20">
+    <aside id="sidebar" class="w-80 bg-white/10 backdrop-blur-lg border-r border-white/20 md:static fixed inset-y-0 left-0 z-50 translate-x-[-100%] md:translate-x-0 transition-transform">
       <div class="p-6 border-b border-white/20">
-        <div class="flex items-center space-x-3 mb-4">
-          <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full grid place-items-center">
-            <span class="text-white font-bold text-lg">💬</span>
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full grid place-items-center">
+              <span class="text-white font-bold text-lg">💬</span>
+            </div>
+            <h2 class="text-white text-xl font-bold">ChatFlow</h2>
           </div>
-          <h1 class="text-white text-xl font-bold">ChatFlow</h1>
+          <button id="closeSidebar" class="md:hidden p-2 rounded-lg bg-white/10">✕</button>
         </div>
 
         <!-- Nombre y sala -->
-        <div class="space-y-2 mb-4">
-          <input id="nameInput" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                 placeholder="Tu nombre (ej. David)"/>
-          <div class="flex gap-2">
-            <input id="roomInput" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                   placeholder="Sala (general)"/>
-            <button id="joinBtn" class="px-3 bg-purple-600 text-white rounded-xl">Ir</button>
+        <div class="space-y-3">
+          <div>
+            <label class="text-sm text-white/70">Tu nombre (máx. 15)</label>
+            <input id="nameInput" maxlength="15"
+              class="mt-1 w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Ej. David" />
+            <p id="nameHint" class="text-xs text-white/60 mt-1">Se mostrará junto a tus mensajes.</p>
           </div>
-          <button id="shareBtn" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white">Copiar enlace de sala</button>
-        </div>
 
-        <!-- Búsqueda (estética) -->
-        <div class="relative">
-          <input type="text" placeholder="Buscar conversaciones..."
-                 class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500">
-          <div class="absolute right-3 top-2.5 text-white/60">🔍</div>
+          <div class="flex gap-2">
+            <input id="roomInput"
+              class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Sala (general)" />
+            <button id="joinBtn" class="px-3 bg-purple-600 rounded-xl">Ir</button>
+          </div>
+
+          <button id="shareBtn" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2">Copiar enlace de sala</button>
         </div>
       </div>
 
+      <!-- Tarjeta info sala -->
       <div class="p-4 space-y-2">
-        <!-- Tarjeta de sala actual (informativa) -->
         <div class="p-3 rounded-xl bg-purple-500/20 border border-purple-500/30">
           <div class="flex items-center space-x-3">
             <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center">
-              <span class="text-white font-semibold" id="roomAvatar">#</span>
+              <span id="roomAvatar" class="font-semibold">#</span>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="text-white font-medium truncate">Sala</h3>
+              <h3 class="font-medium truncate">Sala</h3>
               <p id="roomLabel" class="text-white/80 text-sm truncate">general</p>
             </div>
           </div>
-          <p class="text-white/60 text-xs mt-2 break-all" id="roomLink"></p>
+          <p id="roomLink" class="text-white/60 text-xs mt-2 break-all"></p>
+        </div>
+
+        <div id="offlineBadge" class="hidden mt-2 text-sm bg-red-500/20 border border-red-500/40 text-red-100 px-3 py-2 rounded-lg">
+          Sin conexión a Supabase. Reintentando…
         </div>
       </div>
     </aside>
 
+    <!-- Overlay para móvil -->
+    <div id="overlay" class="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm hidden"></div>
+
     <!-- Main chat -->
     <section class="flex-1 flex flex-col bg-white/5 backdrop-blur-sm">
       <!-- Header chat -->
-      <div class="flex items-center justify-between p-6 border-b border-white/20 bg-white/5">
+      <div class="hidden md:flex items-center justify-between p-6 border-b border-white/20 bg-white/5 sticky top-0 z-30">
         <div class="flex items-center space-x-4">
-          <div class="relative">
-            <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center">
-              <span class="text-white font-semibold" id="userInitials">YO</span>
-            </div>
+          <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center">
+            <span id="userInitials" class="font-semibold">YO</span>
           </div>
           <div>
-            <h2 class="text-white text-lg font-semibold" id="headerTitle">Sala: general</h2>
+            <h2 id="headerTitle" class="text-lg font-semibold">Sala: general</h2>
             <p class="text-green-400 text-sm">conectado</p>
           </div>
         </div>
-        <div class="flex items-center space-x-3">
-          <button class="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg" title="Opciones">⚙️</button>
-        </div>
+        <div class="text-white/70">⚙️</div>
       </div>
 
       <!-- Mensajes -->
-      <div id="messagesArea" class="flex-1 overflow-y-auto p-6 space-y-4">
-        <!-- se renderizan por JS; sin animaciones -->
+      <div id="messagesArea" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 pb-[calc(env(safe-area-inset-bottom)+88px)]">
+        <!-- Mensajes generados por JS -->
+      </div>
+
+      <!-- Aviso nuevos mensajes cuando scrolleas arriba -->
+      <div id="unreadBtn" class="hidden absolute left-1/2 -translate-x-1/2 bottom-28 md:bottom-32 bg-purple-600 px-3 py-1.5 rounded-full text-sm cursor-pointer">
+        Nuevos mensajes ↓
       </div>
 
       <!-- Input -->
-      <div class="p-6 border-t border-white/20 bg-white/5">
-        <div class="flex items-end space-x-4">
-          <button class="p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full" title="Adjuntar">📎</button>
+      <div class="p-3 md:p-6 border-t border-white/20 bg-white/5 sticky bottom-0">
+        <div class="flex items-end gap-3">
           <div class="flex-1 relative">
-            <textarea id="messageInput" rows="1" placeholder="Escribe tu mensaje..."
-              class="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-3 pr-12 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none max-h-32"></textarea>
-            <button class="absolute right-3 bottom-3 text-white/70 hover:text-white" title="Emoji">😊</button>
+            <textarea id="messageInput" rows="1" maxlength="1000"
+              class="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-3 pr-12 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none max-h-32"
+              placeholder="Escribe tu mensaje…"></textarea>
+            <div class="absolute right-3 bottom-3 text-xs text-white/60">
+              <span id="msgCount">0</span>/1000
+            </div>
           </div>
-          <button id="sendButton" class="p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600">➤</button>
+          <button id="sendButton" class="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">➤</button>
         </div>
-        <p id="err" class="text-red-400 text-sm mt-2"></p>
+        <p id="err" class="text-red-300 text-sm mt-2"></p>
       </div>
     </section>
   </div>
 
   <script>
     /* ========= 1) CREDENCIALES ========= */
-    const SUPABASE_URL  = "https://amtcdnaenohempvuwjfz.supabase.co"; // <-- tu Project URL
-    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";        // <-- tu anon public key
+    const SUPABASE_URL  = "https://amtcdnaenohempvuwjfz.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
 
     /* ========= 2) Cliente ========= */
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -120,141 +143,186 @@
     const messageInput = $('#messageInput');
     const sendButton = $('#sendButton');
     const errEl = $('#err');
+    const msgCount = $('#msgCount');
     const roomLabel = $('#roomLabel');
     const roomLink = $('#roomLink');
     const roomAvatar = $('#roomAvatar');
     const headerTitle = $('#headerTitle');
     const userInitials = $('#userInitials');
+    const unreadBtn = $('#unreadBtn');
+    const overlay = $('#overlay');
+    const sidebar = $('#sidebar');
+    const toggleSidebar = $('#toggleSidebar');
+    const closeSidebar = $('#closeSidebar');
+    const openRoomLink = $('#openRoomLink');
+    const offlineBadge = $('#offlineBadge');
 
     const escapeHTML = s => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const linkify = t => t.replace(/(https?:\/\/\S+)/g,'<a class="underline" href="$1" target="_blank" rel="noreferrer">$1</a>');
-
-    function setErr(e){ errEl.textContent = e ? (e.message||e).toString() : ''; if(e) console.error(e); }
     function initialsFrom(name){ return (name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??'; }
     function timeStr(ts){ return new Date(ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
+    function setErr(e){ errEl.textContent = e ? (e.message||e).toString() : ''; if(e) console.error(e); }
 
     /* ========= 4) Estado ========= */
     let currentRoom = (new URL(location.href)).hash.replace('#room=','') || 'general';
     let channel = null;
+    let lastSendAt = 0;
 
     // Prefs locales
-    nameInput.value = localStorage.getItem('chat-name') || '';
+    nameInput.value = (localStorage.getItem('chat-name') || '').slice(0,15);
     userInitials.textContent = initialsFrom(nameInput.value || 'Yo');
     roomInput.value = currentRoom;
 
+    // UI de sala
     function updateRoomUI(){
       roomLabel.textContent = currentRoom;
       headerTitle.textContent = 'Sala: ' + currentRoom;
       roomAvatar.textContent = initialsFrom(currentRoom);
       const url = location.origin + location.pathname + '#room=' + encodeURIComponent(currentRoom);
       roomLink.textContent = url;
+      openRoomLink.href = url;
     }
     updateRoomUI();
 
-    /* ========= 5) UI events ========= */
+    /* ========= 5) Sidebar móvil ========= */
+    function openSide(){ sidebar.style.transform='translateX(0)'; overlay.classList.remove('hidden'); }
+    function closeSide(){ sidebar.style.transform='translateX(-100%)'; overlay.classList.add('hidden'); }
+    toggleSidebar?.addEventListener('click', openSide);
+    closeSidebar?.addEventListener('click', closeSide);
+    overlay?.addEventListener('click', closeSide);
+
+    /* ========= 6) Input comportamientos ========= */
     messageInput.addEventListener('input', function(){
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 128) + 'px';
+      this.style.height='auto';
+      this.style.height=Math.min(this.scrollHeight,128)+'px';
+      msgCount.textContent = this.value.length;
+    });
+    msgCount.textContent = messageInput.value.length;
+
+    nameInput.addEventListener('input', ()=>{
+      // fuerza límite 15 y sin saltos de línea
+      let v = nameInput.value.replace(/\s+/g,' ').slice(0,15);
+      nameInput.value = v;
+      localStorage.setItem('chat-name', v);
+      userInitials.textContent = initialsFrom(v || 'Yo');
     });
 
-    messageInput.addEventListener('keydown', (e)=>{
-      if (e.key === 'Enter' && !e.shiftKey){
-        e.preventDefault();
-        sendMessage().catch(setErr);
-      }
+    // Enviar con Enter (sin animaciones)
+    messageInput.addEventListener('keydown', e=>{
+      if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage().catch(setErr); }
     });
-
     sendButton.addEventListener('click', ()=> sendMessage().catch(setErr));
 
     joinBtn.addEventListener('click', ()=>{
       const next = (roomInput.value || 'general').toLowerCase().replace(/[^\w\-]/g,'-');
       attachRoom(next).catch(setErr);
+      closeSide();
     });
 
     shareBtn.addEventListener('click', async ()=>{
       const url = location.origin + location.pathname + '#room=' + encodeURIComponent(currentRoom);
-      try{ await navigator.clipboard.writeText(url); shareBtn.textContent='¡Enlace copiado!'; setTimeout(()=>shareBtn.textContent='Copiar enlace de sala',1200);}catch{ alert('Enlace: '+url); }
+      try{ await navigator.clipboard.writeText(url); shareBtn.textContent='¡Copiado!'; setTimeout(()=>shareBtn.textContent='Copiar enlace de sala',1200);}catch{ alert('Enlace: '+url); }
     });
 
-    nameInput.addEventListener('change', ()=>{
-      const v = nameInput.value.trim();
-      localStorage.setItem('chat-name', v);
-      userInitials.textContent = initialsFrom(v || 'Yo');
-    });
-
-    /* ========= 6) Render ========= */
-    function renderMessage(msg, isMe){
-      const wrapper = document.createElement('div');
-      wrapper.className = 'flex items-start space-x-3 ' + (isMe ? 'justify-end' : '');
-
+    /* ========= 7) Render ========= */
+    function renderMessage(m, isMe){
+      const wrap = document.createElement('div');
+      wrap.className = 'flex items-start gap-3 ' + (isMe ? 'justify-end' : '');
       if (!isMe){
-        wrapper.innerHTML = `
+        wrap.innerHTML = `
           <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center flex-shrink-0">
-            <span class="text-white text-sm font-semibold">${initialsFrom(msg.name)}</span>
+            <span class="text-sm font-semibold">${initialsFrom(m.name)}</span>
           </div>
-          <div class="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 max-w-xs">
-            <p class="text-white break-words">${linkify(escapeHTML(msg.text||''))}</p>
-            <p class="text-white/60 text-xs mt-2">${timeStr(msg.created_at || Date.now())}</p>
-          </div>
-        `;
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 max-w-[80%]">
+            <p class="text-xs text-white/60 mb-1">${escapeHTML(m.name)}</p>
+            <p class="text-white break-words">${linkify(escapeHTML(m.text||''))}</p>
+            <p class="text-white/50 text-xs mt-2">${timeStr(m.created_at||Date.now())}</p>
+          </div>`;
       } else {
-        wrapper.innerHTML = `
-          <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl rounded-tr-md px-4 py-3 max-w-xs">
-            <p class="text-white break-words">${linkify(escapeHTML(msg.text||''))}</p>
-            <p class="text-white/80 text-xs mt-2 text-right">${timeStr(msg.created_at || Date.now())} ✓✓</p>
-          </div>
-        `;
+        wrap.innerHTML = `
+          <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl rounded-tr-md px-4 py-3 max-w-[80%]">
+            <p class="text-xs text-white/80 mb-1 text-right">${escapeHTML(m.name)}</p>
+            <p class="text-white break-words">${linkify(escapeHTML(m.text||''))}</p>
+            <p class="text-white/80 text-xs mt-2 text-right">${timeStr(m.created_at||Date.now())} ✓✓</p>
+          </div>`;
       }
-      messagesArea.appendChild(wrapper);
-      messagesArea.scrollTop = messagesArea.scrollHeight;
+      // si estás lejos del fondo, muestra botón de "Nuevos mensajes"
+      const nearBottom = messagesArea.scrollTop + messagesArea.clientHeight >= messagesArea.scrollHeight - 120;
+      messagesArea.appendChild(wrap);
+      if (nearBottom) {
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+      } else {
+        unreadBtn.classList.remove('hidden');
+      }
     }
+
+    unreadBtn.addEventListener('click', ()=>{
+      unreadBtn.classList.add('hidden');
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    });
+
+    messagesArea.addEventListener('scroll', ()=>{
+      const nearBottom = messagesArea.scrollTop + messagesArea.clientHeight >= messagesArea.scrollHeight - 120;
+      if (nearBottom) unreadBtn.classList.add('hidden');
+    });
 
     async function loadHistory(room){
       messagesArea.innerHTML = '';
-      const { data, error } = await client
-        .from('messages')
-        .select('*')
-        .eq('room', room)
-        .order('created_at',{ascending:true})
-        .limit(300);
+      const { data, error } = await client.from('messages')
+        .select('*').eq('room', room).order('created_at',{ascending:true}).limit(300);
       if (error) return setErr(error);
       const me = (nameInput.value.trim() || 'Invitado');
       data.forEach(m => renderMessage(m, m.name === me));
+      messagesArea.scrollTop = messagesArea.scrollHeight;
     }
 
     async function attachRoom(room){
-      // cerrar canal previo
       if (channel){ await client.removeChannel(channel); channel = null; }
       currentRoom = room;
       updateRoomUI();
       history.replaceState({}, '', '#room=' + encodeURIComponent(room));
       setErr('');
-
       await loadHistory(room);
 
-      // suscripción realtime
       channel = client
         .channel('public:messages:'+room)
         .on('postgres_changes',
-            { event:'INSERT', schema:'public', table:'messages', filter:'room=eq.'+room },
-            payload => {
-              const me = (nameInput.value.trim() || 'Invitado');
-              renderMessage(payload.new, payload.new.name === me);
-            })
-        .subscribe((status)=>{ if(status!=='SUBSCRIBED') console.log('realtime:',status); });
+          { event:'INSERT', schema:'public', table:'messages', filter:'room=eq.'+room },
+          payload => {
+            const me = (nameInput.value.trim() || 'Invitado');
+            renderMessage(payload.new, payload.new.name === me);
+          })
+        .subscribe(status => {
+          offlineBadge.classList.toggle('hidden', status === 'SUBSCRIBED');
+          if (status !== 'SUBSCRIBED') console.log('realtime:', status);
+        });
     }
 
+    // Anti-flood simple: 400ms entre envíos
     async function sendMessage(){
+      const now = Date.now();
+      if (now - lastSendAt < 400) return;
+      lastSendAt = now;
+
+      let name = (nameInput.value || '').trim().slice(0,15);
+      if (!name){ name = 'Invitado'; nameInput.value = name; localStorage.setItem('chat-name', name); }
       const text = messageInput.value.trim().slice(0,1000);
       if (!text) return;
-      const name = (nameInput.value.trim() || 'Invitado').slice(0,30);
+
       const { error } = await client.from('messages').insert({ room: currentRoom, name, text });
       if (error) return setErr(error);
-      messageInput.value=''; messageInput.style.height='auto';
-      // render optimista (opcional): lo evitamos para que no parezca "animación"; llegará por realtime igual.
+      messageInput.value=''; messageInput.style.height='auto'; msgCount.textContent='0';
     }
 
-    // inicio
+    // Conexión status (ping básico)
+    setInterval(async ()=>{
+      try{
+        const { error } = await client.from('messages').select('id').limit(1);
+        offlineBadge.classList.toggle('hidden', !error);
+      }catch(e){ offlineBadge.classList.remove('hidden'); }
+    }, 8000);
+
+    // Start
     attachRoom(currentRoom).catch(setErr);
   </script>
 </body>
