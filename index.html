@@ -91,7 +91,7 @@
           <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center">
             <span id="userInitials" class="font-semibold">YO</span>
           </div>
-        <div>
+          <div>
             <h2 id="headerTitle" class="text-lg font-semibold">Sala: general</h2>
             <p class="text-white/70 text-sm">ID: <span id="myIdHeader" class="font-mono"></span></p>
           </div>
@@ -147,12 +147,29 @@
     </div>
   </div>
 
+  <!-- Modal: Llamada entrante -->
+  <div id="incomingModal" class="hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur">
+    <div class="absolute inset-0 grid place-items-center p-4">
+      <div class="w-full max-w-sm bg-white/10 border border-white/20 rounded-2xl p-5">
+        <div class="text-center">
+          <div class="mx-auto w-16 h-16 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 grid place-items-center text-2xl">📞</div>
+          <h3 class="mt-4 text-lg font-semibold">Llamada entrante</h3>
+          <p class="text-white/70 text-sm mt-1">Sala: <span id="incomingRoomLabel"></span></p>
+          <p class="text-white/60 text-xs mt-1">¿Aceptar?</p>
+        </div>
+        <div class="mt-5 flex gap-3">
+          <button id="rejectBtn" class="flex-1 py-2 rounded-xl bg-red-500/80">Rechazar</button>
+          <button id="acceptBtn" class="flex-1 py-2 rounded-xl bg-green-600/80">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ======= CREDENCIALES ======= */
     const SUPABASE_URL  = "https://amtcdnaenohempvuwjfz.supabase.co";
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
 
-    /* ======= Cliente ======= */
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
     /* ======= Helpers ======= */
@@ -192,6 +209,12 @@
     const muteBtn = $('#muteBtn');
     const cameraBtn = $('#cameraBtn');
     const endBtn = $('#endBtn');
+
+    // Modal entrante
+    const incomingModal = $('#incomingModal');
+    const incomingRoomLabel = $('#incomingRoomLabel');
+    const acceptBtn = $('#acceptBtn');
+    const rejectBtn = $('#rejectBtn');
 
     const escapeHTML = s => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const linkify = t => t.replace(/(https?:\/\/\S+)/g,'<a class="underline" href="$1" target="_blank" rel="noreferrer">$1</a>');
@@ -385,25 +408,30 @@
     let localStream = null;
     let remoteStream = null;
     let callChannel = null;
-    let isMuted = false, isCameraOff = false;
+    let pendingOffer = null;   // SDP pendiente si llega oferta y se muestra modal
+    let pendingFrom  = null;   // UID del que llama
 
-const rtcConfig = {
-  iceServers: [
-    // STUN públicos válidos
-    { urls: [
-      'stun:stun.l.google.com:19302',
-      'stun:stun1.l.google.com:19302',
-      'stun:stun2.l.google.com:19302',
-      'stun:global.stun.twilio.com:3478', // <- sin ?transport=udp
-      'stun:stun.cloudflare.com:3478'
-    ] }
-  ]
-};
+    // STUN válidos
+    const rtcConfig = {
+      iceServers: [
+        { urls: [
+          'stun:stun.l.google.com:19302',
+          'stun:stun1.l.google.com:19302',
+          'stun:stun2.l.google.com:19302',
+          'stun:global.stun.twilio.com:3478',
+          'stun:stun.cloudflare.com:3478'
+        ] }
+      ]
+    };
 
     function showCallUI(on) {
       callPanel.classList.toggle('hidden', !on);
       hangBtn?.classList.toggle('hidden', !on);
       callRoomLabel.textContent = currentRoom;
+    }
+    function showIncoming(on){
+      incomingModal.classList.toggle('hidden', !on);
+      incomingRoomLabel.textContent = currentRoom;
     }
 
     async function ensureCallChannel() {
@@ -414,21 +442,22 @@ const rtcConfig = {
         const msg = payload.payload;
         if (msg.from === myUID) return; // ignorar propios
 
-        if (!rtc) await setupPeer(false); // entrante → soy answerer
-
         if (msg.type === 'offer') {
-          await rtc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-          const ans = await rtc.createAnswer();
-          await rtc.setLocalDescription(ans);
-          callChannel.send({ type: 'broadcast', event: 'webrtc', payload: {
-            from: myUID, kind: 'sdp', type: 'answer', sdp: rtc.localDescription
-          }});
+          // Llega una llamada: mostrar modal
+          pendingOffer = msg.sdp;
+          pendingFrom  = msg.from;
+          showIncoming(true);
         } else if (msg.type === 'answer') {
-          await rtc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          if (rtc && !rtc.currentRemoteDescription) {
+            await rtc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          }
         } else if (msg.type === 'ice') {
-          try { await rtc.addIceCandidate(msg.candidate); } catch {}
+          try { if (rtc) await rtc.addIceCandidate(msg.candidate); } catch {}
         } else if (msg.type === 'end') {
-          endCall();
+          endCall(true);
+          showIncoming(false);
+          pendingOffer = null;
+          pendingFrom  = null;
         }
       });
 
@@ -454,30 +483,34 @@ const rtcConfig = {
       remoteVideo.srcObject = remoteStream;
 
       localStream.getTracks().forEach(t => rtc.addTrack(t, localStream));
-      rtc.ontrack = (e) => {
-        e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
-      };
+      rtc.ontrack = (e) => { e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t)); };
 
       rtc.onicecandidate = (e) => {
         if (e.candidate) {
           callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: {
-            from: myUID, kind: 'ice', type: 'ice', candidate: e.candidate
+            from: myUID, type: 'ice', candidate: e.candidate
           }});
         }
       };
 
       rtc.onconnectionstatechange = () => {
-        if (['disconnected','failed','closed'].includes(rtc.connectionState)) endCall();
+        if (rtc.connectionState === 'connected') {
+          // ok
+        } else if (rtc.connectionState === 'failed') {
+          alert('No se pudo establecer la conexión WebRTC. Si estás en una red estricta, quizá necesites un servidor TURN. Intenta otra red o agrega TURN.');
+          endCall(true);
+        } else if (['disconnected','closed'].includes(rtc.connectionState)) {
+          endCall(true);
+        }
       };
 
       showCallUI(true);
 
-      // si soy caller, emitir oferta
       if (asCaller) {
         const offer = await rtc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
         await rtc.setLocalDescription(offer);
         callChannel.send({ type: 'broadcast', event: 'webrtc', payload: {
-          from: myUID, kind: 'sdp', type: 'offer', sdp: rtc.localDescription
+          from: myUID, type: 'offer', sdp: rtc.localDescription
         }});
       }
     }
@@ -493,8 +526,35 @@ const rtcConfig = {
       }
     }
 
-    function endCall() {
+    async function acceptCall() {
+      try{
+        showIncoming(false);
+        await ensureCallChannel();
+        await setupPeer(false);
+        if (pendingOffer) {
+          await rtc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
+          const ans = await rtc.createAnswer();
+          await rtc.setLocalDescription(ans);
+          callChannel.send({ type: 'broadcast', event: 'webrtc', payload: {
+            from: myUID, type: 'answer', sdp: rtc.localDescription
+          }});
+        }
+        pendingOffer = null; pendingFrom = null;
+      }catch(e){
+        alert('No se pudo aceptar la llamada: ' + (e.message||e));
+        pendingOffer = null; pendingFrom = null;
+        endCall(true);
+      }
+    }
+
+    function rejectCall() {
+      showIncoming(false);
       callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: { from: myUID, type: 'end' }});
+      pendingOffer = null; pendingFrom = null;
+    }
+
+    function endCall(silent=false) {
+      if (!silent) callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: { from: myUID, type: 'end' }});
       if (rtc) { try { rtc.ontrack = null; rtc.close(); } catch {} rtc = null; }
       if (remoteVideo) remoteVideo.srcObject = null;
       if (localVideo)  localVideo.srcObject  = localStream || null;
@@ -504,8 +564,12 @@ const rtcConfig = {
     // Botones de llamada
     callBtn?.addEventListener('click', startCall);
     callBtnMobile?.addEventListener('click', startCall);
-    hangBtn?.addEventListener('click', endCall);
-    endBtn?.addEventListener('click', endCall);
+    hangBtn?.addEventListener('click', ()=>endCall());
+    endBtn?.addEventListener('click', ()=>endCall());
+
+    // Modal entrante
+    acceptBtn?.addEventListener('click', acceptCall);
+    rejectBtn?.addEventListener('click', rejectCall);
 
     muteBtn?.addEventListener('click', ()=>{
       if (!localStream) return;
