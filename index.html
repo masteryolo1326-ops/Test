@@ -348,7 +348,6 @@
 
     async function attachRoom(room){
       if (channel){ await client.removeChannel(channel); channel = null; }
-      // cerrar canal de llamadas si existe (se re-crea luego)
       if (callChannel) { await client.removeChannel(callChannel); callChannel = null; }
 
       currentRoom = room;
@@ -370,7 +369,6 @@
           if (status !== 'SUBSCRIBED') console.log('realtime:', status);
         });
 
-      // reabrir canal de llamadas para la nueva sala
       await ensureCallChannel();
     }
 
@@ -385,7 +383,6 @@
       const text = messageInput.value.trim().slice(0,1000);
       if (!text) return;
 
-      // Intentar con uid; si la tabla no tiene columna uid, reintenta sin uid
       let error = null;
       ({ error } = await client.from('messages').insert({ room: currentRoom, name, text, uid: myUID }));
       if (error && /uid/i.test(error.message||'')){
@@ -408,10 +405,9 @@
     let localStream = null;
     let remoteStream = null;
     let callChannel = null;
-    let pendingOffer = null;   // SDP pendiente si llega oferta y se muestra modal
-    let pendingFrom  = null;   // UID del que llama
+    let pendingOffer = null;
+    let pendingFrom  = null;
 
-    // STUN válidos
     const rtcConfig = {
       iceServers: [
         { urls: [
@@ -440,10 +436,9 @@
 
       callChannel.on('broadcast', { event: 'webrtc' }, async (payload) => {
         const msg = payload.payload;
-        if (msg.from === myUID) return; // ignorar propios
+        if (msg.from === myUID) return;
 
         if (msg.type === 'offer') {
-          // Llega una llamada: mostrar modal
           pendingOffer = msg.sdp;
           pendingFrom  = msg.from;
           showIncoming(true);
@@ -471,12 +466,37 @@
     async function setupPeer(asCaller) {
       rtc = new RTCPeerConnection(rtcConfig);
 
-      if (!localStream) {
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
+      // Intentar video+audio; si no hay cam, solo audio
+      async function getMediaSmart() {
+        try {
+          return await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+          });
+        } catch (e) {
+          if (e.name === 'NotFoundError' || e.name === 'OverconstrainedError') {
+            return await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+            });
+          }
+          throw e;
+        }
       }
+
+      if (!localStream) {
+        try {
+          localStream = await getMediaSmart();
+        } catch (e) {
+          const msg = (e.name === 'NotAllowedError')
+            ? 'El navegador bloqueó micrófono/cámara. Permite el acceso en el candado/ícono de cámara.'
+            : (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')
+              ? 'No se encontró dispositivo de audio/video. Conecta un micrófono o webcam e inténtalo de nuevo.'
+              : 'Error al acceder a dispositivos: ' + (e.message || e.name);
+          alert('No se pudo iniciar la llamada: ' + msg);
+          throw e;
+        }
+      }
+
       localVideo.srcObject = localStream;
 
       remoteStream = new MediaStream();
@@ -494,10 +514,8 @@
       };
 
       rtc.onconnectionstatechange = () => {
-        if (rtc.connectionState === 'connected') {
-          // ok
-        } else if (rtc.connectionState === 'failed') {
-          alert('No se pudo establecer la conexión WebRTC. Si estás en una red estricta, quizá necesites un servidor TURN. Intenta otra red o agrega TURN.');
+        if (rtc.connectionState === 'failed') {
+          alert('No se pudo establecer la conexión WebRTC. En redes estrictas quizá necesites un servidor TURN.');
           endCall(true);
         } else if (['disconnected','closed'].includes(rtc.connectionState)) {
           endCall(true);
@@ -521,7 +539,7 @@
         await setupPeer(true);
       } catch (e) {
         console.error(e);
-        alert('No se pudo iniciar la llamada: ' + (e.message||e));
+        // Ya mostramos alerta en setupPeer si es tema de dispositivos
         endCall();
       }
     }
@@ -571,17 +589,22 @@
     acceptBtn?.addEventListener('click', acceptCall);
     rejectBtn?.addEventListener('click', rejectCall);
 
+    // Botones tolerantes (si no hay pistas)
     muteBtn?.addEventListener('click', ()=>{
       if (!localStream) return;
-      const next = !(localStream.getAudioTracks()[0]?.enabled ?? true);
-      localStream.getAudioTracks().forEach(t => t.enabled = next);
+      const tracks = localStream.getAudioTracks();
+      if (!tracks.length) { alert('No hay micrófono disponible.'); return; }
+      const next = !(tracks[0].enabled ?? true);
+      tracks.forEach(t => t.enabled = next);
       muteBtn.textContent = next ? '🔇 Mutear' : '🔊 Activar';
     });
 
     cameraBtn?.addEventListener('click', ()=>{
       if (!localStream) return;
-      const next = !(localStream.getVideoTracks()[0]?.enabled ?? true);
-      localStream.getVideoTracks().forEach(t => t.enabled = next);
+      const tracks = localStream.getVideoTracks();
+      if (!tracks.length) { alert('No hay cámara disponible.'); return; }
+      const next = !(tracks[0].enabled ?? true);
+      tracks.forEach(t => t.enabled = next);
       cameraBtn.textContent = next ? '📷 Apagar' : '📷 Encender';
     });
 
