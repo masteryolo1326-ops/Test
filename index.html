@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>ChatFlow — Realtime (Supabase)</title>
+  <title>ChatFlow — Realtime + Llamadas (Supabase)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body{font-family:'Inter',sans-serif}
-    /* Evitamos animaciones para insertar mensajes */
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen text-white">
-  <!-- Topbar (visible en móvil) -->
+  <!-- Topbar (móvil) -->
   <header class="md:hidden sticky top-0 z-40 bg-black/30 backdrop-blur border-b border-white/10">
     <div class="flex items-center justify-between px-4 py-3">
       <button id="toggleSidebar" class="p-2 rounded-xl bg-white/10">☰</button>
       <h1 class="font-semibold">ChatFlow</h1>
-      <a id="openRoomLink" class="p-2 rounded-xl bg-white/10" title="Abrir enlace">🔗</a>
+      <div class="flex gap-2">
+        <a id="openRoomLink" class="p-2 rounded-xl bg-white/10" title="Abrir enlace">🔗</a>
+        <button id="callBtnMobile" class="p-2 rounded-xl bg-white/10" title="Llamar">📞</button>
+      </div>
     </div>
   </header>
 
@@ -36,14 +38,14 @@
           <button id="closeSidebar" class="md:hidden p-2 rounded-lg bg-white/10">✕</button>
         </div>
 
-        <!-- Nombre y sala -->
+        <!-- Nombre, sala e ID -->
         <div class="space-y-3">
           <div>
             <label class="text-sm text-white/70">Tu nombre (máx. 15)</label>
             <input id="nameInput" maxlength="15"
               class="mt-1 w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="Ej. David" />
-            <p id="nameHint" class="text-xs text-white/60 mt-1">Se mostrará junto a tus mensajes.</p>
+            <p id="nameHint" class="text-xs text-white/60 mt-1">ID: <span id="myId" class="font-mono"></span></p>
           </div>
 
           <div class="flex gap-2">
@@ -78,31 +80,33 @@
       </div>
     </aside>
 
-    <!-- Overlay para móvil -->
+    <!-- Overlay móvil -->
     <div id="overlay" class="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm hidden"></div>
 
-    <!-- Main chat -->
-    <section class="flex-1 flex flex-col bg-white/5 backdrop-blur-sm">
-      <!-- Header chat -->
+    <!-- Main -->
+    <section class="flex-1 flex flex-col bg-white/5 backdrop-blur-sm relative">
+      <!-- Header (PC) -->
       <div class="hidden md:flex items-center justify-between p-6 border-b border-white/20 bg-white/5 sticky top-0 z-30">
         <div class="flex items-center space-x-4">
           <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center">
             <span id="userInitials" class="font-semibold">YO</span>
           </div>
-          <div>
+        <div>
             <h2 id="headerTitle" class="text-lg font-semibold">Sala: general</h2>
-            <p class="text-green-400 text-sm">conectado</p>
+            <p class="text-white/70 text-sm">ID: <span id="myIdHeader" class="font-mono"></span></p>
           </div>
         </div>
-        <div class="text-white/70">⚙️</div>
+        <div class="flex items-center gap-2">
+          <button id="callBtn" class="px-3 py-2 bg-white/10 rounded-lg">📞 Llamar</button>
+          <button id="hangBtn" class="px-3 py-2 bg-red-500/70 rounded-lg hidden">Colgar</button>
+          <div class="text-white/70">⚙️</div>
+        </div>
       </div>
 
       <!-- Mensajes -->
-      <div id="messagesArea" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 pb-[calc(env(safe-area-inset-bottom)+88px)]">
-        <!-- Mensajes generados por JS -->
-      </div>
+      <div id="messagesArea" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 pb-[calc(env(safe-area-inset-bottom)+88px)]"></div>
 
-      <!-- Aviso nuevos mensajes cuando scrolleas arriba -->
+      <!-- Unread -->
       <div id="unreadBtn" class="hidden absolute left-1/2 -translate-x-1/2 bottom-28 md:bottom-32 bg-purple-600 px-3 py-1.5 rounded-full text-sm cursor-pointer">
         Nuevos mensajes ↓
       </div>
@@ -125,15 +129,33 @@
     </section>
   </div>
 
+  <!-- Panel de llamada -->
+  <div id="callPanel" class="hidden fixed inset-0 bg-black/60 backdrop-blur z-50 p-4 md:p-10">
+    <div class="relative max-w-4xl mx-auto bg-white/10 border border-white/20 rounded-2xl p-3 md:p-5">
+      <div class="flex flex-col md:flex-row gap-3">
+        <video id="remoteVideo" playsinline autoplay class="w-full md:w-2/3 bg-black rounded-xl aspect-video"></video>
+        <video id="localVideo"  playsinline autoplay muted class="w-full md:w-1/3 bg-black rounded-xl aspect-video"></video>
+      </div>
+      <div class="mt-4 flex items-center justify-between">
+        <div class="text-white/80 text-sm">Sala: <span id="callRoomLabel"></span></div>
+        <div class="flex gap-2">
+          <button id="muteBtn" class="px-3 py-2 bg-white/10 rounded-lg">🔇 Mutear</button>
+          <button id="cameraBtn" class="px-3 py-2 bg-white/10 rounded-lg">📷 Apagar</button>
+          <button id="endBtn" class="px-3 py-2 bg-red-500/80 rounded-lg">Colgar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    /* ========= 1) CREDENCIALES ========= */
+    /* ======= CREDENCIALES ======= */
     const SUPABASE_URL  = "https://amtcdnaenohempvuwjfz.supabase.co";
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
 
-    /* ========= 2) Cliente ========= */
+    /* ======= Cliente ======= */
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    /* ========= 3) Helpers ========= */
+    /* ======= Helpers ======= */
     const $ = s => document.querySelector(s);
     const messagesArea = $('#messagesArea');
     const nameInput = $('#nameInput');
@@ -156,24 +178,52 @@
     const closeSidebar = $('#closeSidebar');
     const openRoomLink = $('#openRoomLink');
     const offlineBadge = $('#offlineBadge');
+    const myIdEl = $('#myId');
+    const myIdHeader = $('#myIdHeader');
+    const callBtn = $('#callBtn');
+    const callBtnMobile = $('#callBtnMobile');
+    const hangBtn = $('#hangBtn');
+
+    // Panel llamada
+    const callPanel = $('#callPanel');
+    const callRoomLabel = $('#callRoomLabel');
+    const localVideo = $('#localVideo');
+    const remoteVideo = $('#remoteVideo');
+    const muteBtn = $('#muteBtn');
+    const cameraBtn = $('#cameraBtn');
+    const endBtn = $('#endBtn');
 
     const escapeHTML = s => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const linkify = t => t.replace(/(https?:\/\/\S+)/g,'<a class="underline" href="$1" target="_blank" rel="noreferrer">$1</a>');
-    function initialsFrom(name){ return (name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??'; }
-    function timeStr(ts){ return new Date(ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
-    function setErr(e){ errEl.textContent = e ? (e.message||e).toString() : ''; if(e) console.error(e); }
+    const initialsFrom = name => (name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??';
+    const timeStr = ts => new Date(ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    const setErr = e => { errEl.textContent = e ? (e.message||e).toString() : ''; if(e) console.error(e); };
 
-    /* ========= 4) Estado ========= */
+    // UID persistente
+    function uuidv4(){
+      if (crypto?.randomUUID) return crypto.randomUUID();
+      const a = new Uint8Array(16); (crypto.getRandomValues||function(x){for(let i=0;i<x.length;i++)x[i]=Math.random()*256|0;})(a);
+      a[6] = (a[6] & 0x0f) | 0x40; a[8] = (a[8] & 0x3f) | 0x80;
+      const h=[...a].map(b=>b.toString(16).padStart(2,'0')).join('');
+      return `${h.substr(0,8)}-${h.substr(8,4)}-${h.substr(12,4)}-${h.substr(16,4)}-${h.substr(20)}`;
+    }
+    let myUID = localStorage.getItem('chat-uid');
+    if (!myUID){ myUID = uuidv4(); localStorage.setItem('chat-uid', myUID); }
+    const shortId = uid => (uid||'').replace(/-/g,'').slice(0,6).toUpperCase();
+
+    /* ======= Estado ======= */
     let currentRoom = (new URL(location.href)).hash.replace('#room=','') || 'general';
     let channel = null;
     let lastSendAt = 0;
 
-    // Prefs locales
+    // Prefs iniciales
     nameInput.value = (localStorage.getItem('chat-name') || '').slice(0,15);
     userInitials.textContent = initialsFrom(nameInput.value || 'Yo');
+    myIdEl.textContent = '#' + shortId(myUID);
+    myIdHeader.textContent = '#' + shortId(myUID);
     roomInput.value = currentRoom;
 
-    // UI de sala
+    // UI sala
     function updateRoomUI(){
       roomLabel.textContent = currentRoom;
       headerTitle.textContent = 'Sala: ' + currentRoom;
@@ -181,17 +231,18 @@
       const url = location.origin + location.pathname + '#room=' + encodeURIComponent(currentRoom);
       roomLink.textContent = url;
       openRoomLink.href = url;
+      callRoomLabel.textContent = currentRoom;
     }
     updateRoomUI();
 
-    /* ========= 5) Sidebar móvil ========= */
+    /* ======= Sidebar móvil ======= */
     function openSide(){ sidebar.style.transform='translateX(0)'; overlay.classList.remove('hidden'); }
     function closeSide(){ sidebar.style.transform='translateX(-100%)'; overlay.classList.add('hidden'); }
     toggleSidebar?.addEventListener('click', openSide);
     closeSidebar?.addEventListener('click', closeSide);
     overlay?.addEventListener('click', closeSide);
 
-    /* ========= 6) Input comportamientos ========= */
+    /* ======= Inputs ======= */
     messageInput.addEventListener('input', function(){
       this.style.height='auto';
       this.style.height=Math.min(this.scrollHeight,128)+'px';
@@ -200,14 +251,12 @@
     msgCount.textContent = messageInput.value.length;
 
     nameInput.addEventListener('input', ()=>{
-      // fuerza límite 15 y sin saltos de línea
       let v = nameInput.value.replace(/\s+/g,' ').slice(0,15);
       nameInput.value = v;
       localStorage.setItem('chat-name', v);
       userInitials.textContent = initialsFrom(v || 'Yo');
     });
 
-    // Enviar con Enter (sin animaciones)
     messageInput.addEventListener('keydown', e=>{
       if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage().catch(setErr); }
     });
@@ -224,7 +273,11 @@
       try{ await navigator.clipboard.writeText(url); shareBtn.textContent='¡Copiado!'; setTimeout(()=>shareBtn.textContent='Copiar enlace de sala',1200);}catch{ alert('Enlace: '+url); }
     });
 
-    /* ========= 7) Render ========= */
+    /* ======= Render ======= */
+    function metaLine(m, right=false){
+      const who = `${escapeHTML(m.name||'¿?')} · #${shortId(m.uid||'')}`;
+      return `<p class="text-xs ${right?'text-white/80 text-right':'text-white/60'} mb-1">${who}</p>`;
+    }
     function renderMessage(m, isMe){
       const wrap = document.createElement('div');
       wrap.className = 'flex items-start gap-3 ' + (isMe ? 'justify-end' : '');
@@ -234,33 +287,27 @@
             <span class="text-sm font-semibold">${initialsFrom(m.name)}</span>
           </div>
           <div class="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 max-w-[80%]">
-            <p class="text-xs text-white/60 mb-1">${escapeHTML(m.name)}</p>
+            ${metaLine(m,false)}
             <p class="text-white break-words">${linkify(escapeHTML(m.text||''))}</p>
             <p class="text-white/50 text-xs mt-2">${timeStr(m.created_at||Date.now())}</p>
           </div>`;
       } else {
         wrap.innerHTML = `
           <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl rounded-tr-md px-4 py-3 max-w-[80%]">
-            <p class="text-xs text-white/80 mb-1 text-right">${escapeHTML(m.name)}</p>
+            ${metaLine(m,true)}
             <p class="text-white break-words">${linkify(escapeHTML(m.text||''))}</p>
             <p class="text-white/80 text-xs mt-2 text-right">${timeStr(m.created_at||Date.now())} ✓✓</p>
           </div>`;
       }
-      // si estás lejos del fondo, muestra botón de "Nuevos mensajes"
       const nearBottom = messagesArea.scrollTop + messagesArea.clientHeight >= messagesArea.scrollHeight - 120;
       messagesArea.appendChild(wrap);
-      if (nearBottom) {
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-      } else {
-        unreadBtn.classList.remove('hidden');
-      }
+      if (nearBottom) messagesArea.scrollTop = messagesArea.scrollHeight; else unreadBtn.classList.remove('hidden');
     }
 
     unreadBtn.addEventListener('click', ()=>{
       unreadBtn.classList.add('hidden');
       messagesArea.scrollTop = messagesArea.scrollHeight;
     });
-
     messagesArea.addEventListener('scroll', ()=>{
       const nearBottom = messagesArea.scrollTop + messagesArea.clientHeight >= messagesArea.scrollHeight - 120;
       if (nearBottom) unreadBtn.classList.add('hidden');
@@ -271,13 +318,16 @@
       const { data, error } = await client.from('messages')
         .select('*').eq('room', room).order('created_at',{ascending:true}).limit(300);
       if (error) return setErr(error);
-      const me = (nameInput.value.trim() || 'Invitado');
-      data.forEach(m => renderMessage(m, m.name === me));
+      const meUID = myUID;
+      data.forEach(m => renderMessage(m, (m.uid||'') === meUID));
       messagesArea.scrollTop = messagesArea.scrollHeight;
     }
 
     async function attachRoom(room){
       if (channel){ await client.removeChannel(channel); channel = null; }
+      // cerrar canal de llamadas si existe (se re-crea luego)
+      if (callChannel) { await client.removeChannel(callChannel); callChannel = null; }
+
       currentRoom = room;
       updateRoomUI();
       history.replaceState({}, '', '#room=' + encodeURIComponent(room));
@@ -289,16 +339,19 @@
         .on('postgres_changes',
           { event:'INSERT', schema:'public', table:'messages', filter:'room=eq.'+room },
           payload => {
-            const me = (nameInput.value.trim() || 'Invitado');
-            renderMessage(payload.new, payload.new.name === me);
+            const isMe = (payload.new.uid||'') === myUID;
+            renderMessage(payload.new, isMe);
           })
         .subscribe(status => {
           offlineBadge.classList.toggle('hidden', status === 'SUBSCRIBED');
           if (status !== 'SUBSCRIBED') console.log('realtime:', status);
         });
+
+      // reabrir canal de llamadas para la nueva sala
+      await ensureCallChannel();
     }
 
-    // Anti-flood simple: 400ms entre envíos
+    // Anti-flood suave
     async function sendMessage(){
       const now = Date.now();
       if (now - lastSendAt < 400) return;
@@ -309,12 +362,17 @@
       const text = messageInput.value.trim().slice(0,1000);
       if (!text) return;
 
-      const { error } = await client.from('messages').insert({ room: currentRoom, name, text });
+      // Intentar con uid; si la tabla no tiene columna uid, reintenta sin uid
+      let error = null;
+      ({ error } = await client.from('messages').insert({ room: currentRoom, name, text, uid: myUID }));
+      if (error && /uid/i.test(error.message||'')){
+        ({ error } = await client.from('messages').insert({ room: currentRoom, name, text }));
+      }
       if (error) return setErr(error);
       messageInput.value=''; messageInput.style.height='auto'; msgCount.textContent='0';
     }
 
-    // Conexión status (ping básico)
+    // Ping de conexión
     setInterval(async ()=>{
       try{
         const { error } = await client.from('messages').select('id').limit(1);
@@ -322,8 +380,146 @@
       }catch(e){ offlineBadge.classList.remove('hidden'); }
     }, 8000);
 
+    // ====== Llamadas (WebRTC + Supabase Broadcast) ======
+    let rtc = null;
+    let localStream = null;
+    let remoteStream = null;
+    let callChannel = null;
+    let isMuted = false, isCameraOff = false;
+
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
+      ]
+    };
+
+    function showCallUI(on) {
+      callPanel.classList.toggle('hidden', !on);
+      hangBtn?.classList.toggle('hidden', !on);
+      callRoomLabel.textContent = currentRoom;
+    }
+
+    async function ensureCallChannel() {
+      if (callChannel) return callChannel;
+      callChannel = client.channel('call:' + currentRoom, { config: { broadcast: { self: true } } });
+
+      callChannel.on('broadcast', { event: 'webrtc' }, async (payload) => {
+        const msg = payload.payload;
+        if (msg.from === myUID) return; // ignorar propios
+
+        if (!rtc) await setupPeer(false); // entrante → soy answerer
+
+        if (msg.type === 'offer') {
+          await rtc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          const ans = await rtc.createAnswer();
+          await rtc.setLocalDescription(ans);
+          callChannel.send({ type: 'broadcast', event: 'webrtc', payload: {
+            from: myUID, kind: 'sdp', type: 'answer', sdp: rtc.localDescription
+          }});
+        } else if (msg.type === 'answer') {
+          await rtc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+        } else if (msg.type === 'ice') {
+          try { await rtc.addIceCandidate(msg.candidate); } catch {}
+        } else if (msg.type === 'end') {
+          endCall();
+        }
+      });
+
+      await callChannel.subscribe((status) => {
+        if (status !== 'SUBSCRIBED') console.log('call channel:', status);
+      });
+
+      return callChannel;
+    }
+
+    async function setupPeer(asCaller) {
+      rtc = new RTCPeerConnection(rtcConfig);
+
+      if (!localStream) {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+      }
+      localVideo.srcObject = localStream;
+
+      remoteStream = new MediaStream();
+      remoteVideo.srcObject = remoteStream;
+
+      localStream.getTracks().forEach(t => rtc.addTrack(t, localStream));
+      rtc.ontrack = (e) => {
+        e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
+      };
+
+      rtc.onicecandidate = (e) => {
+        if (e.candidate) {
+          callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: {
+            from: myUID, kind: 'ice', type: 'ice', candidate: e.candidate
+          }});
+        }
+      };
+
+      rtc.onconnectionstatechange = () => {
+        if (['disconnected','failed','closed'].includes(rtc.connectionState)) endCall();
+      };
+
+      showCallUI(true);
+
+      // si soy caller, emitir oferta
+      if (asCaller) {
+        const offer = await rtc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+        await rtc.setLocalDescription(offer);
+        callChannel.send({ type: 'broadcast', event: 'webrtc', payload: {
+          from: myUID, kind: 'sdp', type: 'offer', sdp: rtc.localDescription
+        }});
+      }
+    }
+
+    async function startCall() {
+      try {
+        await ensureCallChannel();
+        await setupPeer(true);
+      } catch (e) {
+        console.error(e);
+        alert('No se pudo iniciar la llamada: ' + (e.message||e));
+        endCall();
+      }
+    }
+
+    function endCall() {
+      callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: { from: myUID, type: 'end' }});
+      if (rtc) { try { rtc.ontrack = null; rtc.close(); } catch {} rtc = null; }
+      if (remoteVideo) remoteVideo.srcObject = null;
+      if (localVideo)  localVideo.srcObject  = localStream || null;
+      showCallUI(false);
+    }
+
+    // Botones de llamada
+    callBtn?.addEventListener('click', startCall);
+    callBtnMobile?.addEventListener('click', startCall);
+    hangBtn?.addEventListener('click', endCall);
+    endBtn?.addEventListener('click', endCall);
+
+    muteBtn?.addEventListener('click', ()=>{
+      if (!localStream) return;
+      const next = !(localStream.getAudioTracks()[0]?.enabled ?? true);
+      localStream.getAudioTracks().forEach(t => t.enabled = next);
+      muteBtn.textContent = next ? '🔇 Mutear' : '🔊 Activar';
+    });
+
+    cameraBtn?.addEventListener('click', ()=>{
+      if (!localStream) return;
+      const next = !(localStream.getVideoTracks()[0]?.enabled ?? true);
+      localStream.getVideoTracks().forEach(t => t.enabled = next);
+      cameraBtn.textContent = next ? '📷 Apagar' : '📷 Encender';
+    });
+
     // Start
-    attachRoom(currentRoom).catch(setErr);
+    (async () => {
+      await attachRoom(currentRoom);
+      await ensureCallChannel();
+    })();
   </script>
 </body>
 </html>
