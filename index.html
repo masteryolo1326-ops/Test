@@ -1,618 +1,557 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>ChatFlow — Realtime + Llamadas (Supabase)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    body{font-family:'Inter',sans-serif}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Votación de prueba · Supabase</title>
+<!-- 
+===========================
+  SQL (ejecutar 1 sola vez)
+===========================
+
+-- Extensiones
+create extension if not exists "uuid-ossp";
+
+-- 1) Encuestas
+create table if not exists public.polls (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null,
+  created_at timestamptz not null default now(),
+  is_active boolean not null default true
+);
+
+-- 2) Candidatos
+create table if not exists public.candidates (
+  id uuid primary key default uuid_generate_v4(),
+  poll_id uuid not null references public.polls(id) on delete cascade,
+  name text not null,
+  info text,
+  created_at timestamptz not null default now()
+);
+
+-- 3) Votos (1 por usuario por poll; actualizable)
+create table if not exists public.votes (
+  id uuid primary key default uuid_generate_v4(),
+  poll_id uuid not null references public.polls(id) on delete cascade,
+  candidate_id uuid not null references public.candidates(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (poll_id, user_id)
+);
+
+-- 4) Perfiles (opcional)
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  username text unique,
+  created_at timestamptz not null default now()
+);
+
+-- RLS
+alter table public.polls enable row level security;
+alter table public.candidates enable row level security;
+alter table public.votes enable row level security;
+alter table public.profiles enable row level security;
+
+-- Políticas mínimas (seguras) para app cliente
+-- polls
+create policy "polls read" on public.polls
+  for select using (true);
+create policy "polls insert auth" on public.polls
+  for insert with check (auth.role() = 'authenticated');
+
+-- candidates
+create policy "cands read" on public.candidates
+  for select using (true);
+create policy "cands insert auth" on public.candidates
+  for insert with check (auth.role() = 'authenticated');
+
+-- votes (leer propios y del poll; escribir/actualizar propios)
+create policy "votes read" on public.votes
+  for select using (true);
+create policy "votes upsert own" on public.votes
+  for insert with check (auth.uid() = user_id);
+create policy "votes update own" on public.votes
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- profiles
+create policy "profiles read own" on public.profiles
+  for select using (auth.uid() = id);
+create policy "profiles upsert own" on public.profiles
+  for insert with check (auth.uid() = id);
+create policy "profiles update own" on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);
+
+-- Semillas opcionales: una encuesta y 3 candidatos
+insert into public.polls (title) values ('Votación de prueba')
+on conflict do nothing;
+
+-- usar el id real de la poll recién creada:
+-- (en la app, el código lo resuelve automáticamente; si quieres manual:)
+-- select id from public.polls where title='Votación de prueba';
+
+-- luego inserta candidatos con ese poll_id
+-- insert into public.candidates (poll_id, name, info)
+-- values ('<POLL_ID>', 'Opción A', 'Descripción A'),
+--        ('<POLL_ID>', 'Opción B', 'Descripción B'),
+--        ('<POLL_ID>', 'Opción C', 'Descripción C');
+
+-->
+
+<style>
+  :root {
+    --bg: #0b0f14;
+    --card: #121821;
+    --muted: #a7b0be;
+    --text: #e8edf5;
+    --accent: #7c8cff;
+    --accent-2: #29d3a0;
+    --danger: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, Roboto, Inter, Segoe UI, sans-serif;
+    background: radial-gradient(1200px 600px at 20% -10%, #142037 0%, transparent 40%),
+                radial-gradient(900px 500px at 120% 10%, #0f1a2a 0%, transparent 30%),
+                var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: grid;
+    place-items: start center;
+    padding: 32px 16px 80px;
+  }
+  .app {
+    width: 100%;
+    max-width: 980px;
+    display: grid;
+    gap: 16px;
+  }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    backdrop-filter: blur(8px);
+  }
+  h1, h2, h3 { margin: 0 0 10px; }
+  h1 { font-size: 24px; letter-spacing: 0.2px; }
+  p { margin: 6px 0 0; color: var(--muted); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  input, button, select {
+    padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+    background: #0e1420; color: var(--text); outline: none;
+  }
+  input::placeholder { color: #7a8596; }
+  button {
+    cursor: pointer; border: 1px solid rgba(124,140,255,0.35);
+    background: linear-gradient(180deg, rgba(124,140,255,0.25), rgba(124,140,255,0.15));
+    transition: transform .08s ease, filter .08s ease, box-shadow .2s ease;
+  }
+  button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  button:active { transform: translateY(0); }
+  .ghost { background: transparent; border-color: rgba(255,255,255,0.15); }
+  .danger { border-color: rgba(255,107,107,0.45);
+            background: linear-gradient(180deg, rgba(255,107,107,0.25), rgba(255,107,107,0.12)); }
+  .success { border-color: rgba(41,211,160,0.45);
+             background: linear-gradient(180deg, rgba(41,211,160,0.25), rgba(41,211,160,0.12)); }
+
+  .grid {
+    display: grid; gap: 12px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 860px) {
+    .grid { grid-template-columns: 1.1fr 0.9fr; }
+  }
+  .pill {
+    display: inline-flex; gap: 8px; align-items: center;
+    padding: 6px 10px; border-radius: 999px; font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+  }
+  .list { display: grid; gap: 8px; }
+  .candidate {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.03);
+  }
+  .meter {
+    height: 9px; border-radius: 999px; background: rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .meter > div {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    width: 0%;
+  }
+  .muted { color: var(--muted); font-size: 13px; }
+  .sep { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0; }
+  footer { text-align: center; opacity: .8; font-size: 12px; margin-top: 8px;}
+  code.inline { padding: 2px 6px; background: rgba(255,255,255,0.08); border-radius: 6px; }
+</style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen text-white">
-  <!-- Topbar (móvil) -->
-  <header class="md:hidden sticky top-0 z-40 bg-black/30 backdrop-blur border-b border-white/10">
-    <div class="flex items-center justify-between px-4 py-3">
-      <button id="toggleSidebar" class="p-2 rounded-xl bg-white/10">☰</button>
-      <h1 class="font-semibold">ChatFlow</h1>
-      <div class="flex gap-2">
-        <a id="openRoomLink" class="p-2 rounded-xl bg-white/10" title="Abrir enlace">🔗</a>
-        <button id="callBtnMobile" class="p-2 rounded-xl bg-white/10" title="Llamar">📞</button>
+<body>
+<div class="app">
+  <div class="card">
+    <div class="row" style="justify-content: space-between; align-items: center;">
+      <div>
+        <h1>Votación de prueba</h1>
+        <p>Regístrate / inicia sesión, elige una opción y tu voto quedará guardado en Supabase.</p>
       </div>
-    </div>
-  </header>
-
-  <div class="flex h-[calc(100dvh)] md:h-screen max-w-7xl mx-auto">
-    <!-- Sidebar -->
-    <aside id="sidebar" class="w-80 bg-white/10 backdrop-blur-lg border-r border-white/20 md:static fixed inset-y-0 left-0 z-50 translate-x-[-100%] md:translate-x-0 transition-transform">
-      <div class="p-6 border-b border-white/20">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full grid place-items-center">
-              <span class="text-white font-bold text-lg">💬</span>
-            </div>
-            <h2 class="text-white text-xl font-bold">ChatFlow</h2>
-          </div>
-          <button id="closeSidebar" class="md:hidden p-2 rounded-lg bg-white/10">✕</button>
-        </div>
-
-        <!-- Nombre, sala e ID -->
-        <div class="space-y-3">
-          <div>
-            <label class="text-sm text-white/70">Tu nombre (máx. 15)</label>
-            <input id="nameInput" maxlength="15"
-              class="mt-1 w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Ej. David" />
-            <p id="nameHint" class="text-xs text-white/60 mt-1">ID: <span id="myId" class="font-mono"></span></p>
-          </div>
-
-          <div class="flex gap-2">
-            <input id="roomInput"
-              class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Sala (general)" />
-            <button id="joinBtn" class="px-3 bg-purple-600 rounded-xl">Ir</button>
-          </div>
-
-          <button id="shareBtn" class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2">Copiar enlace de sala</button>
-        </div>
-      </div>
-
-      <!-- Tarjeta info sala -->
-      <div class="p-4 space-y-2">
-        <div class="p-3 rounded-xl bg-purple-500/20 border border-purple-500/30">
-          <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center">
-              <span id="roomAvatar" class="font-semibold">#</span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="font-medium truncate">Sala</h3>
-              <p id="roomLabel" class="text-white/80 text-sm truncate">general</p>
-            </div>
-          </div>
-          <p id="roomLink" class="text-white/60 text-xs mt-2 break-all"></p>
-        </div>
-
-        <div id="offlineBadge" class="hidden mt-2 text-sm bg-red-500/20 border border-red-500/40 text-red-100 px-3 py-2 rounded-lg">
-          Sin conexión a Supabase. Reintentando…
-        </div>
-      </div>
-    </aside>
-
-    <!-- Overlay móvil -->
-    <div id="overlay" class="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm hidden"></div>
-
-    <!-- Main -->
-    <section class="flex-1 flex flex-col bg-white/5 backdrop-blur-sm relative">
-      <!-- Header (PC) -->
-      <div class="hidden md:flex items-center justify-between p-6 border-b border-white/20 bg-white/5 sticky top-0 z-30">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center">
-            <span id="userInitials" class="font-semibold">YO</span>
-          </div>
-          <div>
-            <h2 id="headerTitle" class="text-lg font-semibold">Sala: general</h2>
-            <p class="text-white/70 text-sm">ID: <span id="myIdHeader" class="font-mono"></span></p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="callBtn" class="px-3 py-2 bg-white/10 rounded-lg">📞 Llamar</button>
-          <button id="hangBtn" class="px-3 py-2 bg-red-500/70 rounded-lg hidden">Colgar</button>
-          <div class="text-white/70">⚙️</div>
-        </div>
-      </div>
-
-      <!-- Mensajes -->
-      <div id="messagesArea" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 pb-[calc(env(safe-area-inset-bottom)+88px)]"></div>
-
-      <!-- Unread -->
-      <div id="unreadBtn" class="hidden absolute left-1/2 -translate-x-1/2 bottom-28 md:bottom-32 bg-purple-600 px-3 py-1.5 rounded-full text-sm cursor-pointer">
-        Nuevos mensajes ↓
-      </div>
-
-      <!-- Input -->
-      <div class="p-3 md:p-6 border-t border-white/20 bg-white/5 sticky bottom-0">
-        <div class="flex items-end gap-3">
-          <div class="flex-1 relative">
-            <textarea id="messageInput" rows="1" maxlength="1000"
-              class="w-full bg-white/10 border border-white/20 rounded-2xl px-4 py-3 pr-12 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none max-h-32"
-              placeholder="Escribe tu mensaje…"></textarea>
-            <div class="absolute right-3 bottom-3 text-xs text-white/60">
-              <span id="msgCount">0</span>/1000
-            </div>
-          </div>
-          <button id="sendButton" class="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full">➤</button>
-        </div>
-        <p id="err" class="text-red-300 text-sm mt-2"></p>
-      </div>
-    </section>
-  </div>
-
-  <!-- Panel de llamada -->
-  <div id="callPanel" class="hidden fixed inset-0 bg-black/60 backdrop-blur z-50 p-4 md:p-10">
-    <div class="relative max-w-4xl mx-auto bg-white/10 border border-white/20 rounded-2xl p-3 md:p-5">
-      <div class="flex flex-col md:flex-row gap-3">
-        <video id="remoteVideo" playsinline autoplay class="w-full md:w-2/3 bg-black rounded-xl aspect-video"></video>
-        <video id="localVideo"  playsinline autoplay muted class="w-full md:w-1/3 bg-black rounded-xl aspect-video"></video>
-      </div>
-      <div class="mt-4 flex items-center justify-between">
-        <div class="text-white/80 text-sm">Sala: <span id="callRoomLabel"></span></div>
-        <div class="flex gap-2">
-          <button id="muteBtn" class="px-3 py-2 bg-white/10 rounded-lg">🔇 Mutear</button>
-          <button id="cameraBtn" class="px-3 py-2 bg-white/10 rounded-lg">📷 Apagar</button>
-          <button id="endBtn" class="px-3 py-2 bg-red-500/80 rounded-lg">Colgar</button>
-        </div>
-      </div>
+      <div id="authStatus" class="pill">Desconectado</div>
     </div>
   </div>
 
-  <!-- Modal: Llamada entrante -->
-  <div id="incomingModal" class="hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur">
-    <div class="absolute inset-0 grid place-items-center p-4">
-      <div class="w-full max-w-sm bg-white/10 border border-white/20 rounded-2xl p-5">
-        <div class="text-center">
-          <div class="mx-auto w-16 h-16 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 grid place-items-center text-2xl">📞</div>
-          <h3 class="mt-4 text-lg font-semibold">Llamada entrante</h3>
-          <p class="text-white/70 text-sm mt-1">Sala: <span id="incomingRoomLabel"></span></p>
-          <p class="text-white/60 text-xs mt-1">¿Aceptar?</p>
-        </div>
-        <div class="mt-5 flex gap-3">
-          <button id="rejectBtn" class="flex-1 py-2 rounded-xl bg-red-500/80">Rechazar</button>
-          <button id="acceptBtn" class="flex-1 py-2 rounded-xl bg-green-600/80">Aceptar</button>
-        </div>
+  <div class="grid">
+    <!-- PANEL DE AUTENTICACIÓN -->
+    <div class="card" id="authCard">
+      <h2>Acceso</h2>
+      <p class="muted">Usa email y contraseña (modo demo).</p>
+      <div class="sep"></div>
+      <form id="signupForm" class="row" autocomplete="off">
+        <input id="su_email" type="email" placeholder="Email" required />
+        <input id="su_pass" type="password" placeholder="Contraseña (mín. 6)" minlength="6" required />
+        <button type="submit">Crear cuenta</button>
+      </form>
+      <div class="sep"></div>
+      <form id="loginForm" class="row" autocomplete="off">
+        <input id="li_email" type="email" placeholder="Email" required />
+        <input id="li_pass" type="password" placeholder="Contraseña" required />
+        <button type="submit" class="success">Iniciar sesión</button>
+        <button type="button" id="logoutBtn" class="ghost">Cerrar sesión</button>
+      </form>
+      <p id="authMsg" class="muted"></p>
+    </div>
+
+    <!-- PANEL DE VOTACIÓN -->
+    <div class="card" id="voteCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <h2 id="pollTitle">Encuesta</h2>
+        <span id="myVotePill" class="pill" style="display:none;">Mi voto: <strong id="myVoteName"></strong></span>
       </div>
+      <p class="muted">Puedes cambiar tu voto en cualquier momento.</p>
+      <div class="sep"></div>
+
+      <div id="candidatesList" class="list"></div>
+
+      <div class="sep"></div>
+      <div class="row">
+        <button id="refreshBtn" class="ghost">Actualizar</button>
+        <button id="seedBtn" title="Crea encuesta y candidatos si faltan">Sembrar datos (si faltan)</button>
+      </div>
+      <p id="voteMsg" class="muted"></p>
     </div>
   </div>
 
-  <script>
-    /* ======= CREDENCIALES ======= */
-    const SUPABASE_URL  = "https://amtcdnaenohempvuwjfz.supabase.co";
-    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
+  <footer>
+    Supabase client demo · Realtime on <code class="inline">public.votes</code> · RLS seguro
+  </footer>
+</div>
 
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+<!-- Supabase JS -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script type="module">
+/* ==========
+   CONFIGURA AQUÍ
+   ========== */
+const SUPABASE_URL = "https://TU-PROJECT-REF.supabase.co";      // <-- pega tu URL
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1...";                // <-- pega tu anon key
 
-    /* ======= Helpers ======= */
-    const $ = s => document.querySelector(s);
-    const messagesArea = $('#messagesArea');
-    const nameInput = $('#nameInput');
-    const roomInput = $('#roomInput');
-    const joinBtn = $('#joinBtn');
-    const shareBtn = $('#shareBtn');
-    const messageInput = $('#messageInput');
-    const sendButton = $('#sendButton');
-    const errEl = $('#err');
-    const msgCount = $('#msgCount');
-    const roomLabel = $('#roomLabel');
-    const roomLink = $('#roomLink');
-    const roomAvatar = $('#roomAvatar');
-    const headerTitle = $('#headerTitle');
-    const userInitials = $('#userInitials');
-    const unreadBtn = $('#unreadBtn');
-    const overlay = $('#overlay');
-    const sidebar = $('#sidebar');
-    const toggleSidebar = $('#toggleSidebar');
-    const closeSidebar = $('#closeSidebar');
-    const openRoomLink = $('#openRoomLink');
-    const offlineBadge = $('#offlineBadge');
-    const myIdEl = $('#myId');
-    const myIdHeader = $('#myIdHeader');
-    const callBtn = $('#callBtn');
-    const callBtnMobile = $('#callBtnMobile');
-    const hangBtn = $('#hangBtn');
+/* ==========
+   APP STATE
+   ========== */
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let session = null;
+let currentUser = null;
+let currentPoll = null;
+let candidates = [];
+let myVote = null;
 
-    // Panel llamada
-    const callPanel = $('#callPanel');
-    const callRoomLabel = $('#callRoomLabel');
-    const localVideo = $('#localVideo');
-    const remoteVideo = $('#remoteVideo');
-    const muteBtn = $('#muteBtn');
-    const cameraBtn = $('#cameraBtn');
-    const endBtn = $('#endBtn');
+/* Utilidades UI */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const setText = (sel, text) => { const el = $(sel); if (el) el.textContent = text; };
+const setAuthStatus = (txt) => { $("#authStatus").textContent = txt; };
 
-    // Modal entrante
-    const incomingModal = $('#incomingModal');
-    const incomingRoomLabel = $('#incomingRoomLabel');
-    const acceptBtn = $('#acceptBtn');
-    const rejectBtn = $('#rejectBtn');
+function toast(el, msg, isError=false) {
+  el.textContent = msg;
+  el.style.color = isError ? "var(--danger)" : "var(--muted)";
+}
 
-    const escapeHTML = s => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const linkify = t => t.replace(/(https?:\/\/\S+)/g,'<a class="underline" href="$1" target="_blank" rel="noreferrer">$1</a>');
-    const initialsFrom = name => (name||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() || '??';
-    const timeStr = ts => new Date(ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-    const setErr = e => { errEl.textContent = e ? (e.message||e).toString() : ''; if(e) console.error(e); };
+/* ==========
+   AUTH
+   ========== */
+async function loadSession() {
+  const { data: { session: s } } = await supabase.auth.getSession();
+  session = s;
+  currentUser = s?.user ?? null;
+  setAuthStatus(currentUser ? `Conectado: ${currentUser.email}` : "Desconectado");
+  if (currentUser) {
+    $("#logoutBtn").disabled = false;
+    await ensurePollAndCandidates();
+    await loadVoteAndResults();
+    subscribeRealtime();
+  } else {
+    $("#logoutBtn").disabled = true;
+  }
+}
 
-    // UID persistente
-    function uuidv4(){
-      if (crypto?.randomUUID) return crypto.randomUUID();
-      const a = new Uint8Array(16); (crypto.getRandomValues||function(x){for(let i=0;i<x.length;i++)x[i]=Math.random()*256|0;})(a);
-      a[6] = (a[6] & 0x0f) | 0x40; a[8] = (a[8] & 0x3f) | 0x80;
-      const h=[...a].map(b=>b.toString(16).padStart(2,'0')).join('');
-      return `${h.substr(0,8)}-${h.substr(8,4)}-${h.substr(12,4)}-${h.substr(16,4)}-${h.substr(20)}`;
+supabase.auth.onAuthStateChange(async (_event, s) => {
+  session = s;
+  currentUser = s?.user ?? null;
+  setAuthStatus(currentUser ? `Conectado: ${currentUser.email}` : "Desconectado");
+  if (currentUser) {
+    await ensurePollAndCandidates();
+    await loadVoteAndResults();
+    subscribeRealtime();
+  } else {
+    clearUI();
+  }
+});
+
+$("#signupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("#su_email").value.trim();
+  const password = $("#su_pass").value;
+  const { error } = await supabase.auth.signUp({ email, password });
+  toast($("#authMsg"), error ? `Error: ${error.message}` : "Cuenta creada. Revisa tu correo si te pide confirmación.");
+});
+
+$("#loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("#li_email").value.trim();
+  const password = $("#li_pass").value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  toast($("#authMsg"), error ? `Error: ${error.message}` : "Sesión iniciada.");
+});
+
+$("#logoutBtn").addEventListener("click", async () => {
+  await supabase.auth.signOut();
+  toast($("#authMsg"), "Sesión cerrada.");
+});
+
+/* ==========
+   DATA: Poll & Candidates
+   ========== */
+async function ensurePollAndCandidates() {
+  // 1) obtener (o crear) la poll "Votación de prueba"
+  let { data: polls, error: ep } = await supabase
+    .from("polls")
+    .select("*")
+    .eq("title", "Votación de prueba")
+    .limit(1);
+
+  if (ep) { toast($("#voteMsg"), "Error cargando encuesta: " + ep.message, true); return; }
+
+  if (!polls || polls.length === 0) {
+    // intentar crear (requiere política insert)
+    const { data: created, error: ei } = await supabase
+      .from("polls")
+      .insert({ title: "Votación de prueba", is_active: true })
+      .select()
+      .limit(1);
+    if (ei) {
+      toast($("#voteMsg"), "No existe encuesta y no se pudo crear (revisa políticas RLS).", true);
+      return;
     }
-    let myUID = localStorage.getItem('chat-uid');
-    if (!myUID){ myUID = uuidv4(); localStorage.setItem('chat-uid', myUID); }
-    const shortId = uid => (uid||'').replace(/-/g,'').slice(0,6).toUpperCase();
+    currentPoll = created[0];
+  } else {
+    currentPoll = polls[0];
+  }
 
-    /* ======= Estado ======= */
-    let currentRoom = (new URL(location.href)).hash.replace('#room=','') || 'general';
-    let channel = null;
-    let lastSendAt = 0;
+  setText("#pollTitle", currentPoll?.title ?? "Encuesta");
+  // 2) candidatos
+  const { data: cands, error: ec } = await supabase
+    .from("candidates")
+    .select("*")
+    .eq("poll_id", currentPoll.id)
+    .order("created_at", { ascending: true });
 
-    // Prefs iniciales
-    nameInput.value = (localStorage.getItem('chat-name') || '').slice(0,15);
-    userInitials.textContent = initialsFrom(nameInput.value || 'Yo');
-    myIdEl.textContent = '#' + shortId(myUID);
-    myIdHeader.textContent = '#' + shortId(myUID);
-    roomInput.value = currentRoom;
+  if (ec) { toast($("#voteMsg"), "Error cargando candidatos: " + ec.message, true); return; }
 
-    // UI sala
-    function updateRoomUI(){
-      roomLabel.textContent = currentRoom;
-      headerTitle.textContent = 'Sala: ' + currentRoom;
-      roomAvatar.textContent = initialsFrom(currentRoom);
-      const url = location.origin + location.pathname + '#room=' + encodeURIComponent(currentRoom);
-      roomLink.textContent = url;
-      openRoomLink.href = url;
-      callRoomLabel.textContent = currentRoom;
+  candidates = cands ?? [];
+
+  // si no hay candidatos, sembrar 3 por defecto
+  if (candidates.length === 0) {
+    const seed = [
+      { poll_id: currentPoll.id, name: "Opción A", info: "Descripción A" },
+      { poll_id: currentPoll.id, name: "Opción B", info: "Descripción B" },
+      { poll_id: currentPoll.id, name: "Opción C", info: "Descripción C" },
+    ];
+    const { data: createdC, error: es } = await supabase.from("candidates").insert(seed).select();
+    if (es) {
+      toast($("#voteMsg"), "No hay candidatos y no se pudieron crear (revisa RLS).", true);
+    } else {
+      candidates = createdC;
     }
-    updateRoomUI();
+  }
 
-    /* ======= Sidebar móvil ======= */
-    function openSide(){ sidebar.style.transform='translateX(0)'; overlay.classList.remove('hidden'); }
-    function closeSide(){ sidebar.style.transform='translateX(-100%)'; overlay.classList.add('hidden'); }
-    toggleSidebar?.addEventListener('click', openSide);
-    closeSidebar?.addEventListener('click', closeSide);
-    overlay?.addEventListener('click', closeSide);
+  renderCandidates();
+}
 
-    /* ======= Inputs ======= */
-    messageInput.addEventListener('input', function(){
-      this.style.height='auto';
-      this.style.height=Math.min(this.scrollHeight,128)+'px';
-      msgCount.textContent = this.value.length;
-    });
-    msgCount.textContent = messageInput.value.length;
+function renderCandidates(voteCounts = {}) {
+  const list = $("#candidatesList");
+  list.innerHTML = "";
+  const totalVotes = Object.values(voteCounts).reduce((a,b)=>a+b, 0);
 
-    nameInput.addEventListener('input', ()=>{
-      let v = nameInput.value.replace(/\s+/g,' ').slice(0,15);
-      nameInput.value = v;
-      localStorage.setItem('chat-name', v);
-      userInitials.textContent = initialsFrom(v || 'Yo');
-    });
+  candidates.forEach(c => {
+    const count = voteCounts[c.id] ?? 0;
+    const percent = totalVotes > 0 ? Math.round((count * 100) / totalVotes) : 0;
 
-    messageInput.addEventListener('keydown', e=>{
-      if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage().catch(setErr); }
-    });
-    sendButton.addEventListener('click', ()=> sendMessage().catch(setErr));
+    const item = document.createElement("div");
+    item.className = "candidate";
+    item.innerHTML = `
+      <div>
+        <strong>${c.name}</strong>
+        <div class="muted">${c.info ?? ""}</div>
+        <div class="meter" style="margin-top:8px;"><div style="width:${percent}%"></div></div>
+        <div class="muted" style="margin-top:6px;">${count} voto(s) · ${percent}%</div>
+      </div>
+      <div>
+        <button data-cid="${c.id}" class="voteBtn">Votar</button>
+      </div>
+    `;
+    list.appendChild(item);
+  });
 
-    joinBtn.addEventListener('click', ()=>{
-      const next = (roomInput.value || 'general').toLowerCase().replace(/[^\w\-]/g,'-');
-      attachRoom(next).catch(setErr);
-      closeSide();
-    });
-
-    shareBtn.addEventListener('click', async ()=>{
-      const url = location.origin + location.pathname + '#room=' + encodeURIComponent(currentRoom);
-      try{ await navigator.clipboard.writeText(url); shareBtn.textContent='¡Copiado!'; setTimeout(()=>shareBtn.textContent='Copiar enlace de sala',1200);}catch{ alert('Enlace: '+url); }
-    });
-
-    /* ======= Render ======= */
-    function metaLine(m, right=false){
-      const who = `${escapeHTML(m.name||'¿?')} · #${shortId(m.uid||'')}`;
-      return `<p class="text-xs ${right?'text-white/80 text-right':'text-white/60'} mb-1">${who}</p>`;
-    }
-    function renderMessage(m, isMe){
-      const wrap = document.createElement('div');
-      wrap.className = 'flex items-start gap-3 ' + (isMe ? 'justify-end' : '');
-      if (!isMe){
-        wrap.innerHTML = `
-          <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full grid place-items-center flex-shrink-0">
-            <span class="text-sm font-semibold">${initialsFrom(m.name)}</span>
-          </div>
-          <div class="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-md px-4 py-3 max-w-[80%]">
-            ${metaLine(m,false)}
-            <p class="text-white break-words">${linkify(escapeHTML(m.text||''))}</p>
-            <p class="text-white/50 text-xs mt-2">${timeStr(m.created_at||Date.now())}</p>
-          </div>`;
-      } else {
-        wrap.innerHTML = `
-          <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl rounded-tr-md px-4 py-3 max-w-[80%]">
-            ${metaLine(m,true)}
-            <p class="text-white break-words">${linkify(escapeHTML(m.text||''))}</p>
-            <p class="text-white/80 text-xs mt-2 text-right">${timeStr(m.created_at||Date.now())} ✓✓</p>
-          </div>`;
+  $$(".voteBtn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (!currentUser) {
+        toast($("#voteMsg"), "Inicia sesión para votar.", true);
+        return;
       }
-      const nearBottom = messagesArea.scrollTop + messagesArea.clientHeight >= messagesArea.scrollHeight - 120;
-      messagesArea.appendChild(wrap);
-      if (nearBottom) messagesArea.scrollTop = messagesArea.scrollHeight; else unreadBtn.classList.remove('hidden');
-    }
-
-    unreadBtn.addEventListener('click', ()=>{
-      unreadBtn.classList.add('hidden');
-      messagesArea.scrollTop = messagesArea.scrollHeight;
+      await castVote(btn.getAttribute("data-cid"));
     });
-    messagesArea.addEventListener('scroll', ()=>{
-      const nearBottom = messagesArea.scrollTop + messagesArea.clientHeight >= messagesArea.scrollHeight - 120;
-      if (nearBottom) unreadBtn.classList.add('hidden');
+  });
+}
+
+/* ==========
+   VOTAR (upsert por (poll_id, user_id))
+   ========== */
+async function castVote(candidate_id) {
+  if (!currentPoll) return;
+
+  const payload = {
+    poll_id: currentPoll.id,
+    candidate_id,
+    user_id: currentUser.id
+  };
+
+  const { data, error } = await supabase
+    .from("votes")
+    .upsert(payload, { onConflict: "poll_id,user_id" })
+    .select()
+    .single();
+
+  if (error) {
+    toast($("#voteMsg"), "No se pudo registrar el voto: " + error.message, true);
+  } else {
+    toast($("#voteMsg"), "¡Voto registrado!");
+    myVote = data;
+    await loadVoteAndResults();
+  }
+}
+
+/* ==========
+   CARGAR MI VOTO + RESULTADOS
+   ========== */
+async function loadVoteAndResults() {
+  if (!currentPoll) return;
+
+  // Mi voto
+  if (currentUser) {
+    const { data: v, error: ev } = await supabase
+      .from("votes")
+      .select("*")
+      .eq("poll_id", currentPoll.id)
+      .eq("user_id", currentUser.id)
+      .limit(1);
+
+    if (!ev && v && v.length) {
+      myVote = v[0];
+      const cand = candidates.find(c => c.id === myVote.candidate_id);
+      if (cand) {
+        $("#myVotePill").style.display = "inline-flex";
+        setText("#myVoteName", cand.name);
+      }
+    } else {
+      $("#myVotePill").style.display = "none";
+      myVote = null;
+    }
+  }
+
+  // Todos los votos (conteo en cliente)
+  const { data: allVotes, error: ea } = await supabase
+    .from("votes")
+    .select("candidate_id")
+    .eq("poll_id", currentPoll.id);
+
+  if (ea) {
+    toast($("#voteMsg"), "Error cargando resultados: " + ea.message, true);
+    return;
+  }
+
+  const counts = {};
+  (allVotes ?? []).forEach(v => {
+    counts[v.candidate_id] = (counts[v.candidate_id] ?? 0) + 1;
+  });
+
+  renderCandidates(counts);
+}
+
+/* ==========
+   REALTIME
+   ========== */
+let channel = null;
+function subscribeRealtime() {
+  if (!currentPoll) return;
+  if (channel) {
+    supabase.removeChannel(channel);
+    channel = null;
+  }
+
+  channel = supabase
+    .channel("realtime-votes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "votes", filter: `poll_id=eq.${currentPoll.id}` },
+      async () => {
+        await loadVoteAndResults();
+      }
+    )
+    .subscribe((status) => {
+      // opcional: console.log("Realtime status:", status);
     });
+}
 
-    async function loadHistory(room){
-      messagesArea.innerHTML = '';
-      const { data, error } = await client.from('messages')
-        .select('*').eq('room', room).order('created_at',{ascending:true}).limit(300);
-      if (error) return setErr(error);
-      const meUID = myUID;
-      data.forEach(m => renderMessage(m, (m.uid||'') === meUID));
-      messagesArea.scrollTop = messagesArea.scrollHeight;
-    }
+/* ==========
+   Sembrar manualmente (si faltan datos y tienes permiso de insert)
+   ========== */
+$("#seedBtn").addEventListener("click", async () => {
+  if (!currentUser) {
+    toast($("#voteMsg"), "Inicia sesión para sembrar datos.", true);
+    return;
+  }
+  await ensurePollAndCandidates();
+  await loadVoteAndResults();
+  toast($("#voteMsg"), "Revisé/sembré datos básicos.");
+});
 
-    async function attachRoom(room){
-      if (channel){ await client.removeChannel(channel); channel = null; }
-      if (callChannel) { await client.removeChannel(callChannel); callChannel = null; }
+$("#refreshBtn").addEventListener("click", async () => {
+  await ensurePollAndCandidates();
+  await loadVoteAndResults();
+});
 
-      currentRoom = room;
-      updateRoomUI();
-      history.replaceState({}, '', '#room=' + encodeURIComponent(room));
-      setErr('');
-      await loadHistory(room);
+/* ==========
+   Helpers
+   ========== */
+function clearUI() {
+  setText("#pollTitle", "Encuesta");
+  $("#candidatesList").innerHTML = "";
+  $("#myVotePill").style.display = "none";
+  toast($("#voteMsg"), "Inicia sesión para votar.");
+}
 
-      channel = client
-        .channel('public:messages:'+room)
-        .on('postgres_changes',
-          { event:'INSERT', schema:'public', table:'messages', filter:'room=eq.'+room },
-          payload => {
-            const isMe = (payload.new.uid||'') === myUID;
-            renderMessage(payload.new, isMe);
-          })
-        .subscribe(status => {
-          offlineBadge.classList.toggle('hidden', status === 'SUBSCRIBED');
-          if (status !== 'SUBSCRIBED') console.log('realtime:', status);
-        });
-
-      await ensureCallChannel();
-    }
-
-    // Anti-flood suave
-    async function sendMessage(){
-      const now = Date.now();
-      if (now - lastSendAt < 400) return;
-      lastSendAt = now;
-
-      let name = (nameInput.value || '').trim().slice(0,15);
-      if (!name){ name = 'Invitado'; nameInput.value = name; localStorage.setItem('chat-name', name); }
-      const text = messageInput.value.trim().slice(0,1000);
-      if (!text) return;
-
-      let error = null;
-      ({ error } = await client.from('messages').insert({ room: currentRoom, name, text, uid: myUID }));
-      if (error && /uid/i.test(error.message||'')){
-        ({ error } = await client.from('messages').insert({ room: currentRoom, name, text }));
-      }
-      if (error) return setErr(error);
-      messageInput.value=''; messageInput.style.height='auto'; msgCount.textContent='0';
-    }
-
-    // Ping de conexión
-    setInterval(async ()=>{
-      try{
-        const { error } = await client.from('messages').select('id').limit(1);
-        offlineBadge.classList.toggle('hidden', !error);
-      }catch(e){ offlineBadge.classList.remove('hidden'); }
-    }, 8000);
-
-    // ====== Llamadas (WebRTC + Supabase Broadcast) ======
-    let rtc = null;
-    let localStream = null;
-    let remoteStream = null;
-    let callChannel = null;
-    let pendingOffer = null;
-    let pendingFrom  = null;
-
-    const rtcConfig = {
-      iceServers: [
-        { urls: [
-          'stun:stun.l.google.com:19302',
-          'stun:stun1.l.google.com:19302',
-          'stun:stun2.l.google.com:19302',
-          'stun:global.stun.twilio.com:3478',
-          'stun:stun.cloudflare.com:3478'
-        ] }
-      ]
-    };
-
-    function showCallUI(on) {
-      callPanel.classList.toggle('hidden', !on);
-      hangBtn?.classList.toggle('hidden', !on);
-      callRoomLabel.textContent = currentRoom;
-    }
-    function showIncoming(on){
-      incomingModal.classList.toggle('hidden', !on);
-      incomingRoomLabel.textContent = currentRoom;
-    }
-
-    async function ensureCallChannel() {
-      if (callChannel) return callChannel;
-      callChannel = client.channel('call:' + currentRoom, { config: { broadcast: { self: true } } });
-
-      callChannel.on('broadcast', { event: 'webrtc' }, async (payload) => {
-        const msg = payload.payload;
-        if (msg.from === myUID) return;
-
-        if (msg.type === 'offer') {
-          pendingOffer = msg.sdp;
-          pendingFrom  = msg.from;
-          showIncoming(true);
-        } else if (msg.type === 'answer') {
-          if (rtc && !rtc.currentRemoteDescription) {
-            await rtc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-          }
-        } else if (msg.type === 'ice') {
-          try { if (rtc) await rtc.addIceCandidate(msg.candidate); } catch {}
-        } else if (msg.type === 'end') {
-          endCall(true);
-          showIncoming(false);
-          pendingOffer = null;
-          pendingFrom  = null;
-        }
-      });
-
-      await callChannel.subscribe((status) => {
-        if (status !== 'SUBSCRIBED') console.log('call channel:', status);
-      });
-
-      return callChannel;
-    }
-
-    async function setupPeer(asCaller) {
-      rtc = new RTCPeerConnection(rtcConfig);
-
-      // Intentar video+audio; si no hay cam, solo audio
-      async function getMediaSmart() {
-        try {
-          return await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-          });
-        } catch (e) {
-          if (e.name === 'NotFoundError' || e.name === 'OverconstrainedError') {
-            return await navigator.mediaDevices.getUserMedia({
-              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-            });
-          }
-          throw e;
-        }
-      }
-
-      if (!localStream) {
-        try {
-          localStream = await getMediaSmart();
-        } catch (e) {
-          const msg = (e.name === 'NotAllowedError')
-            ? 'El navegador bloqueó micrófono/cámara. Permite el acceso en el candado/ícono de cámara.'
-            : (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')
-              ? 'No se encontró dispositivo de audio/video. Conecta un micrófono o webcam e inténtalo de nuevo.'
-              : 'Error al acceder a dispositivos: ' + (e.message || e.name);
-          alert('No se pudo iniciar la llamada: ' + msg);
-          throw e;
-        }
-      }
-
-      localVideo.srcObject = localStream;
-
-      remoteStream = new MediaStream();
-      remoteVideo.srcObject = remoteStream;
-
-      localStream.getTracks().forEach(t => rtc.addTrack(t, localStream));
-      rtc.ontrack = (e) => { e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t)); };
-
-      rtc.onicecandidate = (e) => {
-        if (e.candidate) {
-          callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: {
-            from: myUID, type: 'ice', candidate: e.candidate
-          }});
-        }
-      };
-
-      rtc.onconnectionstatechange = () => {
-        if (rtc.connectionState === 'failed') {
-          alert('No se pudo establecer la conexión WebRTC. En redes estrictas quizá necesites un servidor TURN.');
-          endCall(true);
-        } else if (['disconnected','closed'].includes(rtc.connectionState)) {
-          endCall(true);
-        }
-      };
-
-      showCallUI(true);
-
-      if (asCaller) {
-        const offer = await rtc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-        await rtc.setLocalDescription(offer);
-        callChannel.send({ type: 'broadcast', event: 'webrtc', payload: {
-          from: myUID, type: 'offer', sdp: rtc.localDescription
-        }});
-      }
-    }
-
-    async function startCall() {
-      try {
-        await ensureCallChannel();
-        await setupPeer(true);
-      } catch (e) {
-        console.error(e);
-        // Ya mostramos alerta en setupPeer si es tema de dispositivos
-        endCall();
-      }
-    }
-
-    async function acceptCall() {
-      try{
-        showIncoming(false);
-        await ensureCallChannel();
-        await setupPeer(false);
-        if (pendingOffer) {
-          await rtc.setRemoteDescription(new RTCSessionDescription(pendingOffer));
-          const ans = await rtc.createAnswer();
-          await rtc.setLocalDescription(ans);
-          callChannel.send({ type: 'broadcast', event: 'webrtc', payload: {
-            from: myUID, type: 'answer', sdp: rtc.localDescription
-          }});
-        }
-        pendingOffer = null; pendingFrom = null;
-      }catch(e){
-        alert('No se pudo aceptar la llamada: ' + (e.message||e));
-        pendingOffer = null; pendingFrom = null;
-        endCall(true);
-      }
-    }
-
-    function rejectCall() {
-      showIncoming(false);
-      callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: { from: myUID, type: 'end' }});
-      pendingOffer = null; pendingFrom = null;
-    }
-
-    function endCall(silent=false) {
-      if (!silent) callChannel?.send({ type: 'broadcast', event: 'webrtc', payload: { from: myUID, type: 'end' }});
-      if (rtc) { try { rtc.ontrack = null; rtc.close(); } catch {} rtc = null; }
-      if (remoteVideo) remoteVideo.srcObject = null;
-      if (localVideo)  localVideo.srcObject  = localStream || null;
-      showCallUI(false);
-    }
-
-    // Botones de llamada
-    callBtn?.addEventListener('click', startCall);
-    callBtnMobile?.addEventListener('click', startCall);
-    hangBtn?.addEventListener('click', ()=>endCall());
-    endBtn?.addEventListener('click', ()=>endCall());
-
-    // Modal entrante
-    acceptBtn?.addEventListener('click', acceptCall);
-    rejectBtn?.addEventListener('click', rejectCall);
-
-    // Botones tolerantes (si no hay pistas)
-    muteBtn?.addEventListener('click', ()=>{
-      if (!localStream) return;
-      const tracks = localStream.getAudioTracks();
-      if (!tracks.length) { alert('No hay micrófono disponible.'); return; }
-      const next = !(tracks[0].enabled ?? true);
-      tracks.forEach(t => t.enabled = next);
-      muteBtn.textContent = next ? '🔇 Mutear' : '🔊 Activar';
-    });
-
-    cameraBtn?.addEventListener('click', ()=>{
-      if (!localStream) return;
-      const tracks = localStream.getVideoTracks();
-      if (!tracks.length) { alert('No hay cámara disponible.'); return; }
-      const next = !(tracks[0].enabled ?? true);
-      tracks.forEach(t => t.enabled = next);
-      cameraBtn.textContent = next ? '📷 Apagar' : '📷 Encender';
-    });
-
-    // Start
-    (async () => {
-      await attachRoom(currentRoom);
-      await ensureCallChannel();
-    })();
-  </script>
+/* Start */
+await loadSession();
+</script>
 </body>
 </html>
