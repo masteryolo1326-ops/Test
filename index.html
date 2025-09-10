@@ -3,41 +3,37 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Votación de prueba · Supabase</title>
+<title>Votación de prueba · Supabase (+ Microsoft)</title>
 
 <style>
-  :root {
-    --bg: #0b0f14; --card: #121821; --muted: #a7b0be; --text: #e8edf5;
-    --accent: #7c8cff; --accent-2: #29d3a0; --danger: #ff6b6b;
-  }
+  :root { --bg:#0b0f14; --card:#121821; --muted:#a7b0be; --text:#e8edf5; --accent:#7c8cff; --accent-2:#29d3a0; --danger:#ff6b6b; }
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,Inter,Segoe UI,Roboto,sans-serif;background:radial-gradient(1200px 600px at 20% -10%, #142037 0%, transparent 40%),radial-gradient(900px 500px at 120% 10%, #0f1a2a 0%, transparent 30%),var(--bg);color:var(--text);min-height:100vh;display:grid;place-items:start center;padding:32px 16px 80px}
+  body{margin:0;font-family:system-ui,Inter,Segoe UI,Roboto,sans-serif;background:
+    radial-gradient(1200px 600px at 20% -10%, #142037 0%, transparent 40%),
+    radial-gradient(900px 500px at 120% 10%, #0f1a2a 0%, transparent 30%),var(--bg);
+    color:var(--text);min-height:100vh;display:grid;place-items:start center;padding:32px 16px 80px}
   .app{width:100%;max-width:980px;display:grid;gap:16px}
-  .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
-  h1,h2,h3{margin:0 0 10px}
-  h1{font-size:24px;letter-spacing:.2px}
-  p{margin:6px 0 0;color:var(--muted)}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+  h1,h2,h3{margin:0 0 10px} h1{font-size:24px;letter-spacing:.2px} p{margin:6px 0 0;color:var(--muted)}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   input,button{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0e1420;color:var(--text);outline:none}
-  input::placeholder{color:#7a8596}
-  .inline{display:inline-flex;gap:8px;align-items:center}
-  button{cursor:pointer;border:1px solid rgba(124,140,255,.35);background:linear-gradient(180deg,rgba(124,140,255,.25),rgba(124,140,255,.15));transition:transform .08s ease,filter .08s ease,box-shadow .2s ease}
+  button{cursor:pointer;border:1px solid rgba(124,140,255,.35);background:linear-gradient(180deg,rgba(124,140,255,.25),rgba(124,140,255,.15));
+    transition:transform .08s ease,filter .08s ease,box-shadow .2s ease}
   button:hover{transform:translateY(-1px);filter:brightness(1.05)}
   .ghost{background:transparent;border-color:rgba(255,255,255,.15)}
   .success{border-color:rgba(41,211,160,.45);background:linear-gradient(180deg,rgba(41,211,160,.25),rgba(41,211,160,.12))}
   .danger{border-color:rgba(255,107,107,.45);background:linear-gradient(180deg,rgba(255,107,107,.25),rgba(255,107,107,.12))}
-  .grid{display:grid;gap:12px;grid-template-columns:1fr}
-  @media (min-width:860px){.grid{grid-template-columns:1.1fr .9fr}}
+  .grid{display:grid;gap:12px;grid-template-columns:1fr} @media (min-width:860px){.grid{grid-template-columns:1.1fr .9fr}}
   .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06)}
   .list{display:grid;gap:8px}
   .candidate{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:10px;border:1px dashed rgba(255,255,255,.14);background:rgba(255,255,255,.03)}
-  .meter{height:9px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
-  .meter>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
-  .muted{color:var(--muted);font-size:13px}
-  .sep{height:1px;background:rgba(255,255,255,.08);margin:12px 0}
+  .meter{height:9px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.meter>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0%}
+  .muted{color:var(--muted);font-size:13px}.sep{height:1px;background:rgba(255,255,255,.08);margin:12px 0}
   footer{text-align:center;opacity:.8;font-size:12px;margin-top:8px}
   code.inline{padding:2px 6px;background:rgba(255,255,255,.08);border-radius:6px}
   .msg-ok{color:#8ef0c8}.msg-err{color:#ff9c9c}
+  .hint{font-size:12px;color:#a7b0be;margin-top:4px}
 </style>
 </head>
 <body>
@@ -46,7 +42,7 @@
     <div class="row" style="justify-content:space-between;align-items:center">
       <div>
         <h1>Votación de prueba</h1>
-        <p>Regístrate / inicia sesión, elige una opción y tu voto quedará guardado en Supabase.</p>
+        <p>Accede con tu correo institucional y vota en tiempo real.</p>
       </div>
       <div id="authStatus" class="pill">Desconectado</div>
     </div>
@@ -56,34 +52,42 @@
     <!-- AUTENTICACIÓN -->
     <div class="card" id="authCard">
       <h2>Acceso</h2>
-      <p class="muted">Usa email y contraseña (modo demo). iOS no autocorrige ni capitaliza aquí.</p>
+      <p class="muted">Requerido: <strong>@unison.mx</strong>. Si el correo no es institucional, se rechazará el acceso.</p>
       <div class="sep"></div>
 
-      <form id="signupForm" class="row" autocomplete="off">
-        <input id="su_email" type="email" placeholder="Email" required
-               inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false" />
-        <div class="inline" style="gap:6px;flex:1 1 100%">
-          <input id="su_pass" type="password" placeholder="Contraseña (mín. 6)" minlength="6" required
-                 autocomplete="new-password" style="flex:1" />
-          <label class="muted inline" style="gap:6px"><input type="checkbox" onclick="togglePass('su_pass')" />👁</label>
-        </div>
-        <button type="submit">Crear cuenta</button>
-      </form>
+      <!-- Botón principal: Microsoft -->
+      <div class="row" style="align-items:center">
+        <button id="msBtn" class="success">Iniciar sesión con Microsoft</button>
+        <button id="logoutBtn" class="ghost">Cerrar sesión</button>
+      </div>
+      <p class="hint">Si al pulsar no vuelve aquí, revisa en Supabase: Auth → Providers → Microsoft (URI de callback) y Auth → URL Configuration (Site URL a /Test/).</p>
 
       <div class="sep"></div>
 
-      <form id="loginForm" class="row" autocomplete="off">
-        <input id="li_email" type="email" placeholder="Email" required
-               inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false" />
-        <div class="inline" style="gap:6px;flex:1 1 100%">
-          <input id="li_pass" type="password" placeholder="Contraseña" required
-                 autocomplete="current-password" style="flex:1" />
-          <label class="muted inline" style="gap:6px"><input type="checkbox" onclick="togglePass('li_pass')" />👁</label>
+      <!-- Fallback opcional: email/contraseña (puedes eliminar este bloque si no lo quieres) -->
+      <details>
+        <summary>Plan B: Email/Contraseña (solo @unison.mx)</summary>
+        <div style="margin-top:10px"></div>
+        <form id="signupForm" class="row" autocomplete="off">
+          <input id="su_email" type="email" placeholder="Email @unison.mx" required
+                 pattern="^[^@\\s]+@unison\\.mx$" inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false" />
+          <input id="su_pass" type="password" placeholder="Contraseña (mín. 6)" minlength="6" required autocomplete="new-password" />
+          <label class="muted"><input type="checkbox" onclick="togglePass('su_pass')"> Mostrar</label>
+          <button type="submit">Crear cuenta</button>
+        </form>
+
+        <form id="loginForm" class="row" autocomplete="off">
+          <input id="li_email" type="email" placeholder="Email @unison.mx" required
+                 pattern="^[^@\\s]+@unison\\.mx$" inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false" />
+          <input id="li_pass" type="password" placeholder="Contraseña" required autocomplete="current-password" />
+          <label class="muted"><input type="checkbox" onclick="togglePass('li_pass')"> Mostrar</label>
+          <button type="submit" class="ghost">Iniciar sesión</button>
+        </form>
+
+        <div class="row">
+          <button id="resetBtn" class="ghost">Olvidé mi contraseña</button>
         </div>
-        <button type="submit" class="success">Iniciar sesión</button>
-        <button type="button" id="logoutBtn" class="ghost">Cerrar sesión</button>
-        <button type="button" id="resetBtn" class="ghost">Olvidé mi contraseña</button>
-      </form>
+      </details>
 
       <p id="authMsg" class="muted"></p>
     </div>
@@ -109,7 +113,7 @@
   </div>
 
   <footer>
-    Supabase client demo · Realtime on <code class="inline">public.votes</code> · RLS seguro
+    Supabase demo · Realtime on <code class="inline">public.votes</code> · RLS + dominio @unison.mx
   </footer>
 </div>
 
@@ -117,45 +121,58 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script type="module">
 /* ==========
-   CONFIG (tu proyecto)
+   CONFIG
    ========== */
 const SUPABASE_URL = "https://amtcdnaenohempvuwjfz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
-const EMAIL_REDIRECT = "https://masteryolo1326-ops.github.io/Test/";
+const REDIRECT = "https://masteryolo1326-ops.github.io/Test/";
+const REQUIRED_DOMAIN = "unison.mx";  // dominio institucional permitido
 
 /* ==========
-   APP STATE
+   CLIENT + STATE
    ========== */
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let session = null;
-let currentUser = null;
-let currentPoll = null;
-let candidates = [];
-let myVote = null;
+let session = null, currentUser = null, currentPoll = null, candidates = [], myVote = null;
 
 /* ==========
-   Helpers UI
+   UI HELPERS
    ========== */
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-const setText = (sel, text) => { const el = $(sel); if (el) el.textContent = text; };
-const setAuthStatus = (txt) => { $("#authStatus").textContent = txt; };
-function toast(el, msg, ok=false) { el.textContent = msg; el.className = ok ? "msg-ok" : "msg-err"; }
+const $ = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.from(document.querySelectorAll(s));
+const setText = (sel, t)=>{ const el=$(sel); if(el) el.textContent=t; };
+const setAuthStatus = (t)=>{ $("#authStatus").textContent = t; };
+function toast(el, msg, ok=false){ el.textContent = msg; el.className = ok ? "msg-ok" : "msg-err"; }
 window.togglePass = (id)=>{ const i=document.getElementById(id); i.type = (i.type==="password"?"text":"password"); };
+const isUnison = (email)=> (email||"").toLowerCase().trim().endsWith("@"+REQUIRED_DOMAIN);
 
 /* ==========
-   AUTH
+   AUTH: Microsoft OAuth + fallback email/pass
    ========== */
+async function enforceDomainOrSignOut() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const email = (user.email || "").toLowerCase().trim();
+  if (!isUnison(email)) {
+    await supabase.auth.signOut();
+    toast($("#authMsg"), "Acceso permitido solo con correo @unison.mx", false);
+    setAuthStatus("Desconectado");
+    throw new Error("Dominio no permitido");
+  }
+}
+
 async function loadSession() {
   const { data: { session: s } } = await supabase.auth.getSession();
   session = s;
   currentUser = s?.user ?? null;
   setAuthStatus(currentUser ? `Conectado: ${currentUser.email}` : "Desconectado");
   if (currentUser) {
-    $("#logoutBtn").disabled = false;
-    await ensurePollAndCandidates();
-    await loadVoteAndResults();
-    subscribeRealtime();
+    try {
+      await enforceDomainOrSignOut();
+      $("#logoutBtn").disabled = false;
+      await ensurePollAndCandidates();
+      await loadVoteAndResults();
+      subscribeRealtime();
+    } catch (_) { /* dominio rechazado */ }
   } else {
     $("#logoutBtn").disabled = true;
   }
@@ -166,56 +183,61 @@ supabase.auth.onAuthStateChange(async (_event, s) => {
   currentUser = s?.user ?? null;
   setAuthStatus(currentUser ? `Conectado: ${currentUser.email}` : "Desconectado");
   if (currentUser) {
-    await ensurePollAndCandidates();
-    await loadVoteAndResults();
-    subscribeRealtime();
+    try {
+      await enforceDomainOrSignOut();
+      await ensurePollAndCandidates();
+      await loadVoteAndResults();
+      subscribeRealtime();
+    } catch (_) { /* dominio rechazado */ }
   } else {
     clearUI();
   }
 });
 
-$("#signupForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = $("#su_email").value.replace(/\s+/g,"").toLowerCase().trim();
-  const password = $("#su_pass").value.trim();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { emailRedirectTo: EMAIL_REDIRECT }
+/* Botón Microsoft */
+$("#msBtn").addEventListener("click", async ()=>{
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "azure",               // Microsoft
+    options: { redirectTo: REDIRECT } // volverá a /Test/ tras login
   });
-  toast($("#authMsg"), error ? `Error: ${error.message}` : "Cuenta creada. Revisa tu correo si te pide confirmación.", !error);
+  if (error) toast($("#authMsg"), "OAuth error: "+error.message);
 });
 
-$("#loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = $("#li_email").value.replace(/\s+/g,"").toLowerCase().trim();
-  const password = $("#li_pass").value.trim();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    const msg = /invalid login/i.test(error.message) ? "Correo o contraseña incorrectos (revisa que sea .com y sin espacios)." :
-                /email not confirmed/i.test(error.message) ? "Correo no confirmado. Revisa tu bandeja o desactiva la confirmación en Supabase." :
-                error.message;
-    toast($("#authMsg"), "Error: " + msg);
-  } else {
-    toast($("#authMsg"), "Sesión iniciada.", true);
-  }
-});
-
-$("#logoutBtn").addEventListener("click", async () => {
+/* Logout */
+$("#logoutBtn").addEventListener("click", async ()=>{
   await supabase.auth.signOut();
   toast($("#authMsg"), "Sesión cerrada.", true);
 });
 
-$("#resetBtn").addEventListener("click", async ()=>{
-  const email = prompt("Escribe tu correo:");
-  if(!email) return;
-  const { error } = await supabase.auth.resetPasswordForEmail(email.replace(/\s+/g,"").toLowerCase().trim(), {
-    redirectTo: EMAIL_REDIRECT
-  });
-  toast($("#authMsg"), error ? `Error: ${error.message}` : "Revisa tu correo para cambiar la contraseña.", !error);
+/* Fallback: signup/login email-pass (solo acepta @unison.mx) */
+$("#signupForm")?.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const email = $("#su_email").value.replace(/\s+/g,"").toLowerCase().trim();
+  if (!isUnison(email)) { toast($("#authMsg"), "Usa tu correo institucional @unison.mx"); return; }
+  const password = $("#su_pass").value.trim();
+  const { error } = await supabase.auth.signUp({ email, password, options:{ emailRedirectTo: REDIRECT } });
+  toast($("#authMsg"), error ? `Error: ${error.message}` : "Cuenta creada. Revisa tu correo si pide confirmación.", !error);
 });
 
-/* Recovery flow: si venimos de un enlace de reset */
+$("#loginForm")?.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const email = $("#li_email").value.replace(/\s+/g,"").toLowerCase().trim();
+  if (!isUnison(email)) { toast($("#authMsg"), "Solo correos @unison.mx"); return; }
+  const password = $("#li_pass").value.trim();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  toast($("#authMsg"), error ? `Error: ${error.message}` : "Sesión iniciada.", !error);
+});
+
+/* Reset password (para fallback email/pass) */
+$("#resetBtn")?.addEventListener("click", async ()=>{
+  const email = prompt("Escribe tu correo @unison.mx:");
+  if(!email) return;
+  if(!isUnison(email)) { alert("Debe ser @unison.mx"); return; }
+  const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), { redirectTo: REDIRECT });
+  alert(error ? "Error: "+error.message : "Revisa tu correo para cambiar la contraseña.");
+});
+
+/* Recovery flow (solo aplica a email/pass) */
 (async function handleRecovery(){
   const hash = new URLSearchParams(location.hash.slice(1));
   if (hash.get("type")==="recovery") {
@@ -231,67 +253,41 @@ $("#resetBtn").addEventListener("click", async ()=>{
    DATA: Poll & Candidates
    ========== */
 async function ensurePollAndCandidates() {
-  // 1) obtener (o crear) la poll "Votación de prueba"
-  let { data: polls, error: ep } = await supabase
-    .from("polls")
-    .select("*")
-    .eq("title", "Votación de prueba")
-    .limit(1);
+  let { data: polls, error: ep } = await supabase.from("polls").select("*").eq("title","Votación de prueba").limit(1);
+  if (ep) { toast($("#voteMsg"), "Error cargando encuesta: "+ep.message); return; }
 
-  if (ep) { toast($("#voteMsg"), "Error cargando encuesta: " + ep.message); return; }
-
-  if (!polls || polls.length === 0) {
-    const { data: created, error: ei } = await supabase
-      .from("polls")
-      .insert({ title: "Votación de prueba", is_active: true })
-      .select()
-      .limit(1);
-    if (ei) { toast($("#voteMsg"), "No existe encuesta y no se pudo crear (revisa políticas RLS)."); return; }
+  if (!polls || polls.length===0) {
+    const { data: created, error: ei } = await supabase.from("polls").insert({ title:"Votación de prueba", is_active:true }).select().limit(1);
+    if (ei) { toast($("#voteMsg"), "No existe encuesta y no se pudo crear (revisa RLS)."); return; }
     currentPoll = created[0];
-  } else {
-    currentPoll = polls[0];
-  }
+  } else { currentPoll = polls[0]; }
 
   setText("#pollTitle", currentPoll?.title ?? "Encuesta");
 
-  // 2) candidatos
-  const { data: cands, error: ec } = await supabase
-    .from("candidates")
-    .select("*")
-    .eq("poll_id", currentPoll.id)
-    .order("created_at", { ascending: true });
-
-  if (ec) { toast($("#voteMsg"), "Error cargando candidatos: " + ec.message); return; }
+  const { data: cands, error: ec } = await supabase.from("candidates").select("*").eq("poll_id", currentPoll.id).order("created_at",{ascending:true});
+  if (ec) { toast($("#voteMsg"), "Error cargando candidatos: "+ec.message); return; }
 
   let localCands = cands ?? [];
-
-  // si no hay candidatos, sembrar 3 por defecto
-  if (localCands.length === 0) {
+  if (localCands.length===0) {
     const seed = [
-      { poll_id: currentPoll.id, name: "Opción A", info: "Descripción A" },
-      { poll_id: currentPoll.id, name: "Opción B", info: "Descripción B" },
-      { poll_id: currentPoll.id, name: "Opción C", info: "Descripción C" },
+      { poll_id: currentPoll.id, name:"Opción A", info:"Descripción A" },
+      { poll_id: currentPoll.id, name:"Opción B", info:"Descripción B" },
+      { poll_id: currentPoll.id, name:"Opción C", info:"Descripción C" },
     ];
     const { data: createdC, error: es } = await supabase.from("candidates").insert(seed).select();
-    if (es) {
-      toast($("#voteMsg"), "No hay candidatos y no se pudieron crear (revisa RLS).");
-    } else {
-      localCands = createdC;
-    }
+    if (es) toast($("#voteMsg"), "No hay candidatos y no se pudieron crear (RLS).");
+    else localCands = createdC;
   }
   candidates = localCands;
   renderCandidates();
 }
 
-function renderCandidates(voteCounts = {}) {
-  const list = $("#candidatesList");
-  list.innerHTML = "";
-  const totalVotes = Object.values(voteCounts).reduce((a,b)=>a+b, 0);
-
-  candidates.forEach(c => {
+function renderCandidates(voteCounts={}) {
+  const list = $("#candidatesList"); list.innerHTML = "";
+  const totalVotes = Object.values(voteCounts).reduce((a,b)=>a+b,0);
+  candidates.forEach(c=>{
     const count = voteCounts[c.id] ?? 0;
-    const percent = totalVotes > 0 ? Math.round((count * 100) / totalVotes) : 0;
-
+    const percent = totalVotes>0 ? Math.round(count*100/totalVotes) : 0;
     const item = document.createElement("div");
     item.className = "candidate";
     item.innerHTML = `
@@ -301,146 +297,96 @@ function renderCandidates(voteCounts = {}) {
         <div class="meter" style="margin-top:8px;"><div style="width:${percent}%"></div></div>
         <div class="muted" style="margin-top:6px;">${count} voto(s) · ${percent}%</div>
       </div>
-      <div>
-        <button data-cid="${c.id}" class="voteBtn">Votar</button>
-      </div>
+      <div><button data-cid="${c.id}" class="voteBtn">Votar</button></div>
     `;
     list.appendChild(item);
   });
-
-  $$(".voteBtn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (!currentUser) { toast($("#voteMsg"), "Inicia sesión para votar."); return; }
+  $$(".voteBtn").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast($("#voteMsg"), "Inicia sesión con Microsoft (@unison.mx) para votar."); return; }
       await castVote(btn.getAttribute("data-cid"));
     });
   });
 }
 
 /* ==========
-   VOTAR (upsert con lectura posterior / maybeSingle)
+   VOTAR
    ========== */
-async function castVote(candidate_id) {
-  if (!currentPoll) return;
+async function castVote(candidate_id){
+  if(!currentPoll) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if(!user) { toast($("#voteMsg"), "Inicia sesión para votar."); return; }
+  // extra seguridad en frontend
+  if(!isUnison(user.email||"")) { toast($("#voteMsg"), "Solo correos @unison.mx pueden votar."); return; }
 
-  const payload = { poll_id: currentPoll.id, candidate_id, user_id: currentUser.id };
+  const payload = { poll_id: currentPoll.id, candidate_id, user_id: user.id };
 
-  // 1) upsert sin exigir fila devuelta
-  const { error: upsertError } = await supabase
-    .from("votes")
-    .upsert(payload, { onConflict: "poll_id,user_id" });
+  const { error: upsertError } = await supabase.from("votes").upsert(payload, { onConflict:"poll_id,user_id" });
+  if (upsertError) { toast($("#voteMsg"), "No se pudo registrar el voto: "+upsertError.message); return; }
 
-  if (upsertError) {
-    toast($("#voteMsg"), "No se pudo registrar el voto: " + upsertError.message);
-    return;
-  }
+  const { data: v, error: readErr } = await supabase.from("votes")
+      .select("*").eq("poll_id", currentPoll.id).eq("user_id", user.id).maybeSingle();
 
-  // 2) leer mi voto actual (evita "no rows returned")
-  const { data: v, error: readErr } = await supabase
-    .from("votes")
-    .select("*")
-    .eq("poll_id", currentPoll.id)
-    .eq("user_id", currentUser.id)
-    .maybeSingle();
-
-  if (readErr) {
-    toast($("#voteMsg"), "Voto guardado, pero no pude leerlo: " + readErr.message);
-  } else {
-    myVote = v ?? null;
-    toast($("#voteMsg"), "¡Voto registrado!", true);
-  }
+  if (readErr) toast($("#voteMsg"), "Voto guardado, pero no pude leerlo: "+readErr.message);
+  else { myVote = v ?? null; toast($("#voteMsg"), "¡Voto registrado!", true); }
 
   await loadVoteAndResults();
 }
 
 /* ==========
-   CARGAR MI VOTO + RESULTADOS
+   RESULTADOS
    ========== */
-async function loadVoteAndResults() {
-  if (!currentPoll) return;
+async function loadVoteAndResults(){
+  if(!currentPoll) return;
 
-  // Mi voto
-  if (currentUser) {
-    const { data: v } = await supabase
-      .from("votes")
-      .select("*")
-      .eq("poll_id", currentPoll.id)
-      .eq("user_id", currentUser.id)
-      .maybeSingle();
-
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: v } = await supabase.from("votes").select("*")
+      .eq("poll_id", currentPoll.id).eq("user_id", user.id).maybeSingle();
     if (v) {
       myVote = v;
-      const cand = candidates.find(c => c.id === myVote.candidate_id);
-      if (cand) {
-        $("#myVotePill").style.display = "inline-flex";
-        setText("#myVoteName", cand.name);
-      }
-    } else {
-      $("#myVotePill").style.display = "none";
-      myVote = null;
-    }
+      const cand = candidates.find(c=>c.id===myVote.candidate_id);
+      if (cand) { $("#myVotePill").style.display="inline-flex"; setText("#myVoteName", cand.name); }
+    } else { $("#myVotePill").style.display="none"; myVote=null; }
   }
 
-  // Todos los votos (conteo en cliente)
-  const { data: allVotes, error: ea } = await supabase
-    .from("votes")
-    .select("candidate_id")
-    .eq("poll_id", currentPoll.id);
-
-  if (ea) { toast($("#voteMsg"), "Error cargando resultados: " + ea.message); return; }
-
+  const { data: allVotes, error: ea } = await supabase.from("votes").select("candidate_id").eq("poll_id", currentPoll.id);
+  if (ea) { toast($("#voteMsg"), "Error cargando resultados: "+ea.message); return; }
   const counts = {};
-  (allVotes ?? []).forEach(v => {
-    counts[v.candidate_id] = (counts[v.candidate_id] ?? 0) + 1;
-  });
-
+  (allVotes??[]).forEach(v=>{ counts[v.candidate_id]=(counts[v.candidate_id]??0)+1; });
   renderCandidates(counts);
 }
 
 /* ==========
    REALTIME
    ========== */
-let channel = null;
-function subscribeRealtime() {
-  if (!currentPoll) return;
-  if (channel) { supabase.removeChannel(channel); channel = null; }
-
-  channel = supabase
-    .channel("realtime-votes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "votes", filter: `poll_id=eq.${currentPoll.id}` },
-      async (payload) => {
-        console.log("Realtime payload:", payload);
-        await loadVoteAndResults();
-      }
-    )
-    .subscribe((status)=>console.log("Realtime status:", status));
+let channel=null;
+function subscribeRealtime(){
+  if(!currentPoll) return;
+  if(channel){ supabase.removeChannel(channel); channel=null; }
+  channel = supabase.channel("realtime-votes").on(
+    "postgres_changes",
+    { event:"*", schema:"public", table:"votes", filter:`poll_id=eq.${currentPoll.id}` },
+    async ()=>{ await loadVoteAndResults(); }
+  ).subscribe();
 }
 
 /* ==========
-   Botones varios
+   BOTONES
    ========== */
-$("#seedBtn").addEventListener("click", async () => {
-  if (!currentUser) { toast($("#voteMsg"), "Inicia sesión para sembrar datos."); return; }
-  await ensurePollAndCandidates();
-  await loadVoteAndResults();
+$("#seedBtn").addEventListener("click", async ()=>{
+  const { data: { user } } = await supabase.auth.getUser();
+  if(!user) { toast($("#voteMsg"), "Inicia sesión para sembrar datos."); return; }
+  await ensurePollAndCandidates(); await loadVoteAndResults();
   toast($("#voteMsg"), "Revisé/sembré datos básicos.", true);
 });
-
-$("#refreshBtn").addEventListener("click", async () => {
-  await ensurePollAndCandidates();
-  await loadVoteAndResults();
-});
+$("#refreshBtn").addEventListener("click", async ()=>{ await ensurePollAndCandidates(); await loadVoteAndResults(); });
 
 /* ==========
-   Helpers
+   HELPERS
    ========== */
-function clearUI() {
-  setText("#pollTitle", "Encuesta");
-  $("#candidatesList").innerHTML = "";
-  $("#myVotePill").style.display = "none";
-  toast($("#voteMsg"), "Inicia sesión para votar.");
-}
+function clearUI(){ setText("#pollTitle","Encuesta"); $("#candidatesList").innerHTML=""; $("#myVotePill").style.display="none"; toast($("#voteMsg"), "Inicia sesión para votar."); }
 
 /* Start */
 await loadSession();
