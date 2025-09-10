@@ -9,10 +9,10 @@
   SQL (ejecutar 1 sola vez)
 ===========================
 
--- Extensiones
+-- Extensión
 create extension if not exists "uuid-ossp";
 
--- 1) Encuestas
+-- Encuestas
 create table if not exists public.polls (
   id uuid primary key default uuid_generate_v4(),
   title text not null,
@@ -20,7 +20,7 @@ create table if not exists public.polls (
   is_active boolean not null default true
 );
 
--- 2) Candidatos
+-- Candidatos
 create table if not exists public.candidates (
   id uuid primary key default uuid_generate_v4(),
   poll_id uuid not null references public.polls(id) on delete cascade,
@@ -29,7 +29,7 @@ create table if not exists public.candidates (
   created_at timestamptz not null default now()
 );
 
--- 3) Votos (1 por usuario por poll; actualizable)
+-- Votos (1 por usuario por poll; actualizable)
 create table if not exists public.votes (
   id uuid primary key default uuid_generate_v4(),
   poll_id uuid not null references public.polls(id) on delete cascade,
@@ -39,62 +39,25 @@ create table if not exists public.votes (
   unique (poll_id, user_id)
 );
 
--- 4) Perfiles (opcional)
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  username text unique,
-  created_at timestamptz not null default now()
-);
-
--- RLS
+-- Activar RLS
 alter table public.polls enable row level security;
 alter table public.candidates enable row level security;
 alter table public.votes enable row level security;
-alter table public.profiles enable row level security;
 
--- Políticas mínimas (seguras) para app cliente
--- polls
-create policy "polls read" on public.polls
-  for select using (true);
-create policy "polls insert auth" on public.polls
+-- Políticas mínimas
+create policy "read polls" on public.polls for select using (true);
+create policy "read candidates" on public.candidates for select using (true);
+create policy "read votes" on public.votes for select using (true);
+
+create policy "insert polls" on public.polls
+  for insert with check (auth.role() = 'authenticated');
+create policy "insert candidates" on public.candidates
   for insert with check (auth.role() = 'authenticated');
 
--- candidates
-create policy "cands read" on public.candidates
-  for select using (true);
-create policy "cands insert auth" on public.candidates
-  for insert with check (auth.role() = 'authenticated');
-
--- votes (leer propios y del poll; escribir/actualizar propios)
-create policy "votes read" on public.votes
-  for select using (true);
-create policy "votes upsert own" on public.votes
+create policy "insert votes" on public.votes
   for insert with check (auth.uid() = user_id);
-create policy "votes update own" on public.votes
+create policy "update votes" on public.votes
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
--- profiles
-create policy "profiles read own" on public.profiles
-  for select using (auth.uid() = id);
-create policy "profiles upsert own" on public.profiles
-  for insert with check (auth.uid() = id);
-create policy "profiles update own" on public.profiles
-  for update using (auth.uid() = id) with check (auth.uid() = id);
-
--- Semillas opcionales: una encuesta y 3 candidatos
-insert into public.polls (title) values ('Votación de prueba')
-on conflict do nothing;
-
--- usar el id real de la poll recién creada:
--- (en la app, el código lo resuelve automáticamente; si quieres manual:)
--- select id from public.polls where title='Votación de prueba';
-
--- luego inserta candidatos con ese poll_id
--- insert into public.candidates (poll_id, name, info)
--- values ('<POLL_ID>', 'Opción A', 'Descripción A'),
---        ('<POLL_ID>', 'Opción B', 'Descripción B'),
---        ('<POLL_ID>', 'Opción C', 'Descripción C');
-
 -->
 
 <style>
@@ -119,12 +82,7 @@ on conflict do nothing;
     place-items: start center;
     padding: 32px 16px 80px;
   }
-  .app {
-    width: 100%;
-    max-width: 980px;
-    display: grid;
-    gap: 16px;
-  }
+  .app { width: 100%; max-width: 980px; display: grid; gap: 16px; }
   .card {
     background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
     border: 1px solid rgba(255,255,255,0.08);
@@ -150,23 +108,15 @@ on conflict do nothing;
   button:hover { transform: translateY(-1px); filter: brightness(1.05); }
   button:active { transform: translateY(0); }
   .ghost { background: transparent; border-color: rgba(255,255,255,0.15); }
-  .danger { border-color: rgba(255,107,107,0.45);
-            background: linear-gradient(180deg, rgba(255,107,107,0.25), rgba(255,107,107,0.12)); }
   .success { border-color: rgba(41,211,160,0.45);
              background: linear-gradient(180deg, rgba(41,211,160,0.25), rgba(41,211,160,0.12)); }
 
-  .grid {
-    display: grid; gap: 12px;
-    grid-template-columns: 1fr;
-  }
-  @media (min-width: 860px) {
-    .grid { grid-template-columns: 1.1fr 0.9fr; }
-  }
+  .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { .grid { grid-template-columns: 1.1fr 0.9fr; } }
   .pill {
     display: inline-flex; gap: 8px; align-items: center;
     padding: 6px 10px; border-radius: 999px; font-size: 12px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06);
   }
   .list { display: grid; gap: 8px; }
   .candidate {
@@ -174,14 +124,8 @@ on conflict do nothing;
     padding: 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.14);
     background: rgba(255,255,255,0.03);
   }
-  .meter {
-    height: 9px; border-radius: 999px; background: rgba(255,255,255,0.08);
-    overflow: hidden;
-  }
-  .meter > div {
-    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    width: 0%;
-  }
+  .meter { height: 9px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .meter > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0%; }
   .muted { color: var(--muted); font-size: 13px; }
   .sep { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0; }
   footer { text-align: center; opacity: .8; font-size: 12px; margin-top: 8px;}
@@ -250,10 +194,10 @@ on conflict do nothing;
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script type="module">
 /* ==========
-   CONFIGURA AQUÍ
+   CONFIG YA INTEGRADA
    ========== */
-const SUPABASE_URL = "https://TU-PROJECT-REF.supabase.co";      // <-- pega tu URL
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1...";                // <-- pega tu anon key
+const SUPABASE_URL = "https://amtcdnaenohempvuwjfz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
 
 /* ==========
    APP STATE
@@ -367,10 +311,10 @@ async function ensurePollAndCandidates() {
 
   if (ec) { toast($("#voteMsg"), "Error cargando candidatos: " + ec.message, true); return; }
 
-  candidates = cands ?? [];
+  let localCands = cands ?? [];
 
   // si no hay candidatos, sembrar 3 por defecto
-  if (candidates.length === 0) {
+  if (localCands.length === 0) {
     const seed = [
       { poll_id: currentPoll.id, name: "Opción A", info: "Descripción A" },
       { poll_id: currentPoll.id, name: "Opción B", info: "Descripción B" },
@@ -380,9 +324,10 @@ async function ensurePollAndCandidates() {
     if (es) {
       toast($("#voteMsg"), "No hay candidatos y no se pudieron crear (revisa RLS).", true);
     } else {
-      candidates = createdC;
+      localCands = createdC;
     }
   }
+  candidates = localCands;
 
   renderCandidates();
 }
@@ -517,9 +462,7 @@ function subscribeRealtime() {
         await loadVoteAndResults();
       }
     )
-    .subscribe((status) => {
-      // opcional: console.log("Realtime status:", status);
-    });
+    .subscribe();
 }
 
 /* ==========
