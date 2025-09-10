@@ -3,71 +3,120 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Votación · @unison.mx</title>
+<title>Votación @unison.mx · Supabase</title>
+
+<!-- Fuente moderna -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
 <style>
   :root{
-    --bg:#0b0f14; --panel:#101826; --panel-2:#0e1522; --text:#e8edf5; --muted:#9aa5b5;
-    --border:rgba(255,255,255,.10); --accent:#7c8cff; --accent2:#29d3a0; --danger:#ff6b6b;
-    --ok:#35d0a2;
+    --bg:#0B0F16;
+    --panel:#0E1522;
+    --glass1:rgba(255,255,255,.06);
+    --glass2:rgba(255,255,255,.03);
+    --text:#EAF0FF;
+    --muted:#9AA6B2;
+    --border:rgba(255,255,255,.14);
+    --accent:#7C8CFF;
+    --accent2:#29D3A0;
+    --danger:#FF6B6B;
+    --ok:#55F2C2;
+    --shadow:rgba(0,0,0,.45);
   }
+
   *{box-sizing:border-box}
+  html,body{height:100%}
   body{
-    margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; color:var(--text); background:
-     radial-gradient(1200px 600px at 15% -10%, #142037 0%, transparent 40%),
-     radial-gradient(900px 500px at 120% 10%, #0f1a2a 0%, transparent 30%),var(--bg);
-    min-height:100vh; display:grid; place-items:start center; padding:28px 16px 96px;
+    margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+    background:
+      radial-gradient(1200px 600px at 10% -5%, #152548 0%, transparent 40%),
+      radial-gradient(900px 500px at 110% 0%, #0F1E39 0%, transparent 35%),
+      var(--bg);
+    overflow-x:hidden;
   }
-  .wrap{width:100%; max-width:980px; display:grid; gap:16px}
+
+  /* Animaciones */
+  @keyframes fade-in{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+  @keyframes float{ 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
+  @keyframes pulse{ 0%,100%{box-shadow:0 0 0 0 rgba(124,140,255,.0)} 50%{box-shadow:0 0 0 10px rgba(124,140,255,.08)} }
+
+  .wrap{max-width:1080px; padding:28px 18px 100px; margin:0 auto; animation:fade-in .6s ease both}
+  .hero{
+    position:relative; border-radius:20px; padding:22px; margin-bottom:16px;
+    background:linear-gradient(180deg,var(--glass1),var(--glass2)); border:1px solid var(--border);
+    backdrop-filter:blur(8px); box-shadow:0 20px 50px var(--shadow);
+  }
+  .hero h1{margin:0 0 4px; font-size:28px; letter-spacing:.2px}
+  .hero p{margin:4px 0 0; color:var(--muted)}
+  .badge{display:inline-flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px;
+         border:1px solid var(--border); background:rgba(255,255,255,.07); font-size:12px}
+
+  .grid{display:grid; gap:18px; grid-template-columns:1fr}
+  @media (min-width:980px){ .grid{grid-template-columns:1.1fr .9fr} }
+
   .card{
-    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
-    border:1px solid var(--border); border-radius:16px; padding:18px; backdrop-filter:blur(6px);
-    box-shadow:0 10px 30px rgba(0,0,0,.35);
+    position:relative; border-radius:18px; padding:18px;
+    background:linear-gradient(180deg,var(--glass1),var(--glass2));
+    border:1px solid var(--border); box-shadow:0 18px 40px var(--shadow);
+    backdrop-filter:blur(7px); animation:fade-in .6s .06s ease both;
   }
-  h1{margin:0 0 6px; font-size:28px; letter-spacing:.2px}
-  h2{margin:0 0 6px; font-size:20px}
+  h2{margin:0 0 8px}
   p{margin:6px 0 0; color:var(--muted)}
+  .sep{height:1px; background:var(--border); margin:14px 0}
+
   .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
   .right{margin-left:auto}
-  .pill{display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px;
-        border:1px solid var(--border); background:rgba(255,255,255,.06); font-size:12px}
-  .sep{height:1px; background:var(--border); margin:12px 0}
+
   input,button{
-    padding:12px; border-radius:12px; border:1px solid var(--border); background:var(--panel-2);
-    color:var(--text); outline:none; width:100%;
+    padding:12px 14px; border-radius:12px; border:1px solid var(--border);
+    background:linear-gradient(180deg,#0F1A2C,#0C1523); color:var(--text);
+    outline:none; transition:transform .1s ease, filter .12s ease, border-color .12s ease;
   }
-  input::placeholder{color:#7b8798}
-  button{cursor:pointer; transition:transform .1s ease, filter .1s ease}
-  button:hover{transform:translateY(-1px); filter:brightness(1.05)}
-  .btn{background:linear-gradient(180deg,rgba(124,140,255,.25),rgba(124,140,255,.15)); border-color:rgba(124,140,255,.35)}
+  input:focus{border-color:rgba(124,140,255,.6); filter:brightness(1.05)}
+  input::placeholder{color:#7E8CA1}
+  .twocol{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center}
+  .hint{font-size:12px; color:#9CA7B6}
+
+  button{cursor:pointer; user-select:none}
+  .btn{border-color:rgba(124,140,255,.4); background:linear-gradient(180deg,rgba(124,140,255,.25),rgba(124,140,255,.12))}
+  .btn:hover{transform:translateY(-1px); filter:brightness(1.05)}
+  .btn:active{transform:translateY(0)}
+  .btn-ok{border-color:rgba(41,211,160,.5); background:linear-gradient(180deg,rgba(41,211,160,.25),rgba(41,211,160,.12))}
   .btn-ghost{background:transparent}
-  .btn-ok{background:linear-gradient(180deg,rgba(41,211,160,.25),rgba(41,211,160,.12)); border-color:rgba(41,211,160,.45)}
-  .btn-danger{background:linear-gradient(180deg,rgba(255,107,107,.25),rgba(255,107,107,.12)); border-color:rgba(255,107,107,.45)}
-  .grid{display:grid; gap:16px; grid-template-columns:1fr}
-  @media(min-width:900px){ .grid{grid-template-columns:1.1fr .9fr} }
-  .list{display:grid; gap:10px}
-  .candidate{display:flex; gap:12px; justify-content:space-between; align-items:center;
-             padding:12px; border:1px dashed var(--border); border-radius:12px; background:rgba(255,255,255,.03)}
-  .meter{height:10px; background:rgba(255,255,255,.10); border-radius:999px; overflow:hidden}
-  .meter>div{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2))}
-  .muted{color:var(--muted); font-size:13px}
-  .hint{font-size:12px; color:#a7b0be}
-  .msg-ok{color:#a7ffdd} .msg-err{color:#ffc1c1}
-  .twocol{display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center}
-  label.chk{display:inline-flex; gap:6px; align-items:center; color:var(--muted); font-size:13px}
+  .btn-danger{border-color:rgba(255,107,107,.55); background:linear-gradient(180deg,rgba(255,107,107,.25),rgba(255,107,107,.12))}
+  .pulse{animation:pulse 1.8s ease infinite}
+
+  .list{display:grid; gap:12px}
+  .candidate{
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+    padding:12px; border:1px dashed var(--border); border-radius:14px;
+    background:rgba(255,255,255,.035); animation:fade-in .4s ease both;
+  }
+  .meter{height:10px; background:rgba(255,255,255,.1); border-radius:999px; overflow:hidden}
+  .meter > div{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:9999;
+    background:linear-gradient(180deg,rgba(0,0,0,.65),rgba(0,0,0,.55)); border:1px solid var(--border);
+    color:var(--text); padding:12px 16px; border-radius:12px; backdrop-filter:blur(6px);
+    box-shadow:0 14px 30px var(--shadow); min-width:280px; text-align:center; display:none;
+  }
+  .toast.show{display:block; animation:fade-in .2s ease both}
+  .toast.ok{border-color:rgba(41,211,160,.55)}
+  .toast.err{border-color:rgba(255,107,107,.55)}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="card">
+<div class="wrap">
+  <div class="hero">
     <div class="row" style="justify-content:space-between">
       <div>
         <h1>Votación institucional</h1>
-        <p>Acceso exclusivo con correo <strong>@unison.mx</strong>. Vota y ve resultados en tiempo real.</p>
+        <p>Acceso exclusivo con correo <strong>@unison.mx</strong>. Vota y mira resultados en tiempo real.</p>
       </div>
-      <div id="authStatus" class="pill">Desconectado</div>
+      <div id="authStatus" class="badge">Desconectado</div>
     </div>
   </div>
 
@@ -75,20 +124,20 @@
     <!-- AUTENTICACIÓN -->
     <div class="card">
       <h2>Acceso</h2>
-      <p class="muted">Plan B: Email y contraseña (solo <code>@unison.mx</code>)</p>
+      <p class="hint">Plan B: Email y contraseña (solo <code>@unison.mx</code>)</p>
       <div class="sep"></div>
 
       <!-- Registro -->
       <form id="signupForm" novalidate>
-        <div class="row" style="gap:8px">
+        <div class="row" style="gap:10px">
           <input id="su_email" type="email" placeholder="Email @unison.mx" required
                  pattern="^[^@\s]+@unison\.mx$"
-                 inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false">
+                 inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false" />
           <div class="twocol" style="width:100%">
-            <input id="su_pass" type="password" placeholder="Contraseña (mín. 6)" minlength="6" required autocomplete="new-password">
-            <label class="chk"><input type="checkbox" onclick="toggle('su_pass')">Mostrar</label>
+            <input id="su_pass" type="password" placeholder="Contraseña (mín. 6)" minlength="6" required autocomplete="new-password" />
+            <button type="button" class="btn-ghost" id="su_toggle">👁</button>
           </div>
-          <button class="btn-ok" type="submit">Crear cuenta</button>
+          <button type="submit" class="btn-ok pulse">Crear cuenta</button>
         </div>
         <div id="su_err" class="hint"></div>
       </form>
@@ -97,33 +146,34 @@
 
       <!-- Login -->
       <form id="loginForm" novalidate>
-        <div class="row" style="gap:8px">
+        <div class="row" style="gap:10px">
           <input id="li_email" type="email" placeholder="Email @unison.mx" required
                  pattern="^[^@\s]+@unison\.mx$"
-                 inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false">
+                 inputmode="email" autocapitalize="none" autocomplete="email" autocorrect="off" spellcheck="false" />
           <div class="twocol" style="width:100%">
-            <input id="li_pass" type="password" placeholder="Contraseña" required autocomplete="current-password">
-            <label class="chk"><input type="checkbox" onclick="toggle('li_pass')">Mostrar</label>
+            <input id="li_pass" type="password" placeholder="Contraseña" required autocomplete="current-password" />
+            <button type="button" class="btn-ghost" id="li_toggle">👁</button>
           </div>
           <div class="row" style="width:100%">
-            <button class="btn" type="submit">Iniciar sesión</button>
-            <button class="btn-ghost right" type="button" id="resetBtn">Olvidé mi contraseña</button>
-            <button class="btn-ghost" type="button" id="logoutBtn">Cerrar sesión</button>
+            <button type="submit" class="btn">Iniciar sesión</button>
+            <button type="button" id="resetBtn" class="btn-ghost right">Olvidé mi contraseña</button>
+            <button type="button" id="logoutBtn" class="btn-ghost">Cerrar sesión</button>
           </div>
         </div>
         <div id="li_err" class="hint"></div>
       </form>
 
-      <p id="authMsg" class="muted"></p>
+      <div class="sep"></div>
+      <p id="authMsg" class="hint"></p>
     </div>
 
     <!-- ENCUESTA -->
     <div class="card">
       <div class="row" style="justify-content:space-between">
         <h2 id="pollTitle">Encuesta</h2>
-        <span id="myVotePill" class="pill" style="display:none;">Mi voto: <strong id="myVoteName"></strong></span>
+        <span id="myVotePill" class="badge" style="display:none;">Mi voto: <strong id="myVoteName"></strong></span>
       </div>
-      <p class="muted">Puedes cambiar tu voto cuando quieras.</p>
+      <p class="hint">Puedes cambiar tu voto en cualquier momento.</p>
       <div class="sep"></div>
 
       <div id="candidatesList" class="list"></div>
@@ -133,228 +183,263 @@
         <button id="refreshBtn" class="btn-ghost">Actualizar</button>
         <button id="seedBtn" class="btn">Sembrar datos (si faltan)</button>
       </div>
-      <p id="voteMsg" class="muted"></p>
-    </div>
-  </div>
 
-  <div class="card" style="text-align:center">
-    <small class="muted">Realtime en <code>public.votes</code> · Políticas RLS activas · Dominio @unison.mx</small>
+      <p id="voteMsg" class="hint"></p>
+    </div>
   </div>
 </div>
 
+<div id="toast" class="toast"></div>
+
+<!-- Supabase JS -->
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-/* ========= CONFIG ========= */
-const SUPABASE_URL = "https://amtcdnaenohempvuwjfz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
-const EMAIL_REDIRECT = "https://masteryolo1326-ops.github.io/Test/";
-const REQUIRED_DOMAIN = "unison.mx";
+/* ================== CONFIG ================== */
+const PROJECT_URL  = "https://amtcdnaenohempvuwjfz.supabase.co";
+const ANON_KEY     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4";
+const REDIRECT_URL = "https://masteryolo1326-ops.github.io/Test/";
+const DOMAIN_OK    = "unison.mx";
 
-/* ========= CLIENTE ========= */
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ================== CLIENTE ================== */
+const sb = window.supabase.createClient(PROJECT_URL, ANON_KEY);
 
-/* ========= HELPERS UI ========= */
+/* ================== UTILS UI ================== */
 const $ = (s)=>document.querySelector(s);
-function toggle(id){ const i=document.getElementById(id); i.type = (i.type==="password"?"text":"password"); }
-function toast(el,msg,ok=false){ el.textContent = msg; el.className = ok?"msg-ok":"msg-err"; }
-const isUnison = (email)=>/^[^@\s]+@unison\.mx$/i.test((email||"").trim());
 
-/* ========= ESTADO AUTH ========= */
-async function setAuthStatus(){
-  const { data:{ user } } = await supabase.auth.getUser();
-  $("#authStatus").textContent = user ? `Conectado: ${user.email}` : "Desconectado";
+function showToast(msg, type="ok"){
+  const t = $("#toast"); t.textContent = msg;
+  t.className = `toast show ${type==="ok" ? "ok":"err"}`;
+  clearTimeout(t._hide);
+  t._hide = setTimeout(()=> t.className="toast", 2600);
 }
 
-/* ========= VALIDACIÓN FORM (evita falsos negativos del pattern) ========= */
-function getCleanEmail(inp, errBox){
-  const email = inp.value.trim().toLowerCase();
-  inp.value = email; // normaliza lo que queda tipeado
-  if (!isUnison(email)){
-    inp.setCustomValidity("Usa tu correo institucional @unison.mx");
-    errBox.textContent = "Usa tu correo institucional @unison.mx";
-    return null;
-  }
-  inp.setCustomValidity("");
-  errBox.textContent = "";
-  return email;
+function setStatus(text){ $("#authStatus").textContent = text; }
+
+function setPillVote(name){
+  if(name){ $("#myVoteName").textContent = name; $("#myVotePill").style.display="inline-flex"; }
+  else { $("#myVotePill").style.display="none"; }
 }
 
-/* ========= SIGNUP ========= */
+function normalizeEmail(v){ return (v||"").trim().toLowerCase(); }
+function isUnison(email){ return /^[^@\s]+@unison\.mx$/i.test(normalizeEmail(email)); }
+
+/* ================== AUTH ================== */
+async function refreshStatus(){
+  const { data:{ user } } = await sb.auth.getUser();
+  setStatus(user ? `Conectado: ${user.email}` : "Desconectado");
+  return user;
+}
+
+/* Toggle password */
+$("#su_toggle").onclick = ()=>{ const i=$("#su_pass"); i.type = i.type==="password"?"text":"password"; };
+$("#li_toggle").onclick = ()=>{ const i=$("#li_pass"); i.type = i.type==="password"?"text":"password"; };
+
+/* Signup */
 $("#signupForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
-  const email = getCleanEmail($("#su_email"), $("#su_err"));
+  const email = normalizeEmail($("#su_email").value);
   const pass  = $("#su_pass").value.trim();
-  if (!email) return;
-  if (pass.length < 6){ $("#su_pass").setCustomValidity("La contraseña debe tener al menos 6 caracteres."); $("#su_err").textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
-  $("#su_pass").setCustomValidity("");
 
-  const { error } = await supabase.auth.signUp({
-    email, password: pass, options:{ emailRedirectTo: EMAIL_REDIRECT }
-  });
-  toast($("#authMsg"), error ? `Error: ${error.message}` : "Cuenta creada. Revisa tu correo si está activada la confirmación.", !error);
-  await setAuthStatus();
+  if(!isUnison(email)){ $("#su_err").textContent="Usa tu correo institucional @unison.mx"; showToast("Correo debe ser @unison.mx","err"); return; }
+  if(pass.length<6){ $("#su_err").textContent="La contraseña debe tener al menos 6 caracteres"; showToast("Contraseña demasiado corta","err"); return; }
+  $("#su_err").textContent="";
+
+  const { error } = await sb.auth.signUp({ email, password:pass, options:{ emailRedirectTo: REDIRECT_URL }});
+  if(error){ $("#authMsg").textContent = error.message; showToast(error.message,"err"); }
+  else { $("#authMsg").textContent = "Cuenta creada. Revisa tu correo si hay confirmación."; showToast("Cuenta creada","ok"); }
+  await refreshStatus();
 });
 
-/* ========= LOGIN ========= */
+/* Login */
 $("#loginForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
-  const email = getCleanEmail($("#li_email"), $("#li_err"));
+  const email = normalizeEmail($("#li_email").value);
   const pass  = $("#li_pass").value.trim();
-  if(!email) return;
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-  if (error){
-    const msg = /invalid login/i.test(error.message) ? "Correo o contraseña incorrectos." :
-                /email not confirmed/i.test(error.message) ? "Correo no confirmado. Revisa tu bandeja." :
-                error.message;
-    toast($("#authMsg"), msg);
-  } else {
-    toast($("#authMsg"), "Sesión iniciada.", true);
-  }
-  await setAuthStatus();
+  if(!isUnison(email)){ $("#li_err").textContent="Solo correos @unison.mx"; showToast("Solo @unison.mx","err"); return; }
+  $("#li_err").textContent="";
+
+  const { error } = await sb.auth.signInWithPassword({ email, password:pass });
+  if(error){ $("#authMsg").textContent = error.message; showToast(error.message,"err"); }
+  else { $("#authMsg").textContent = "Sesión iniciada."; showToast("Bienvenido","ok"); }
+  await refreshStatus();
+  await bootData();
 });
 
-/* ========= LOGOUT ========= */
+/* Logout */
 $("#logoutBtn").addEventListener("click", async ()=>{
-  await supabase.auth.signOut();
-  toast($("#authMsg"), "Sesión cerrada.", true);
-  await setAuthStatus();
+  await sb.auth.signOut();
+  $("#authMsg").textContent = "Sesión cerrada.";
+  showToast("Cerraste sesión","ok");
+  await refreshStatus();
+  renderCandidates(); setPillVote(null);
 });
 
-/* ========= RESET PASSWORD ========= */
+/* Reset password */
 $("#resetBtn").addEventListener("click", async ()=>{
   const email = prompt("Escribe tu correo @unison.mx:");
   if(!email) return;
-  if(!isUnison(email)) { alert("Debe ser @unison.mx"); return; }
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: EMAIL_REDIRECT });
+  if(!isUnison(email)){ alert("Debe ser @unison.mx"); return; }
+  const { error } = await sb.auth.resetPasswordForEmail(normalizeEmail(email), { redirectTo: REDIRECT_URL });
   alert(error ? "Error: "+error.message : "Revisa tu correo para cambiar la contraseña.");
 });
 
-/* ========= RECOVERY FLOW ========= */
+/* Recovery flow */
 (async ()=>{
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.get("type")==="recovery"){
+  if(hash.get("type")==="recovery"){
     const nueva = prompt("Nueva contraseña (mín. 6):");
     if(nueva && nueva.length>=6){
-      const { error } = await supabase.auth.updateUser({ password:nueva });
-      alert(error ? "Error: "+error.message : "Contraseña actualizada.");
+      const { error } = await sb.auth.updateUser({ password:nueva });
+      alert(error ? "Error: "+error.message : "Contraseña actualizada. Ya puedes iniciar sesión.");
     }
   }
 })();
 
-/* ========= ENCUESTA / DATOS ========= */
-let currentPoll=null, candidates=[], myVote=null, channel=null;
+/* ================== DATA (Polls / Votes) ================== */
+let POLL=null, CANDIDATES=[], CHANNEL=null;
 
-async function ensurePollAndCandidates(){
-  let { data: polls, error:ep } = await supabase.from("polls").select("*").eq("title","Votación de prueba").limit(1);
-  if(ep){ toast($("#voteMsg"), "Error encuesta: "+ep.message); return; }
+async function ensurePoll(){
+  // buscar
+  let { data: polls, error } = await sb.from("polls").select("*").eq("title","Votación de prueba").limit(1);
+  if(error){ $("#voteMsg").textContent="Error encuesta: "+error.message; return; }
+
   if(!polls || polls.length===0){
-    const { data:created, error:ei } = await supabase.from("polls").insert({ title:"Votación de prueba", is_active:true }).select().limit(1);
-    if(ei){ toast($("#voteMsg"), "No se pudo crear encuesta (revisa RLS)."); return; }
-    currentPoll = created[0];
-  } else currentPoll = polls[0];
-  $("#pollTitle").textContent = currentPoll.title;
+    // crear
+    const { data: created, error: e2 } = await sb.from("polls").insert({ title:"Votación de prueba", is_active:true }).select().limit(1);
+    if(e2){ $("#voteMsg").textContent="No se pudo crear encuesta (revisa RLS)."; return; }
+    POLL = created[0];
+  } else { POLL = polls[0]; }
 
-  const { data:cands, error:ec } = await supabase.from("candidates").select("*").eq("poll_id", currentPoll.id).order("created_at");
-  if(ec){ toast($("#voteMsg"), "Error candidatos: "+ec.message); return; }
-  let local = cands ?? [];
+  $("#pollTitle").textContent = POLL.title;
+}
+
+async function ensureCandidates(){
+  const { data:cands, error } = await sb.from("candidates").select("*").eq("poll_id", POLL.id).order("created_at",{ascending:true});
+  if(error){ $("#voteMsg").textContent="Error candidatos: "+error.message; return; }
+
+  let local = cands || [];
   if(local.length===0){
     const seed = [
-      { poll_id: currentPoll.id, name:"Opción A", info:"Descripción A" },
-      { poll_id: currentPoll.id, name:"Opción B", info:"Descripción B" },
-      { poll_id: currentPoll.id, name:"Opción C", info:"Descripción C" },
+      { poll_id:POLL.id, name:"Opción A", info:"Descripción A" },
+      { poll_id:POLL.id, name:"Opción B", info:"Descripción B" },
+      { poll_id:POLL.id, name:"Opción C", info:"Descripción C" },
     ];
-    const { data:createdC, error:es } = await supabase.from("candidates").insert(seed).select();
-    if(es) toast($("#voteMsg"), "No hay candidatos y no se pudieron crear (RLS).");
-    else local = createdC;
+    const { data: created, error: e2 } = await sb.from("candidates").insert(seed).select();
+    if(e2){ $("#voteMsg").textContent="No se pudieron crear candidatos (RLS)."; }
+    else { local = created; showToast("Candidatos sembrados","ok"); }
   }
-  candidates = local;
-  renderCandidates();
+  CANDIDATES = local;
 }
 
 function renderCandidates(counts={}){
   const list = $("#candidatesList"); list.innerHTML="";
   const total = Object.values(counts).reduce((a,b)=>a+b,0);
-  candidates.forEach(c=>{
-    const n = counts[c.id] ?? 0;
+
+  CANDIDATES.forEach((c, idx)=>{
+    const n = counts[c.id] || 0;
     const pct = total>0 ? Math.round(n*100/total) : 0;
-    const el = document.createElement("div");
-    el.className="candidate";
-    el.innerHTML = `
+
+    const card = document.createElement("div");
+    card.className = "candidate";
+    card.style.animationDelay = (idx*0.04)+"s";
+    card.innerHTML = `
       <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;gap:8px">
-          <strong>${c.name}</strong><span class="muted">${n} voto(s) · ${pct}%</span>
+        <div class="row" style="justify-content:space-between">
+          <strong>${c.name}</strong>
+          <span class="hint">${n} voto(s) · ${pct}%</span>
         </div>
-        <div class="muted">${c.info??""}</div>
+        <div class="hint">${c.info||""}</div>
         <div class="meter" style="margin-top:8px"><div style="width:${pct}%"></div></div>
       </div>
-      <div><button class="btn" data-cid="${c.id}">Votar</button></div>
+      <div>
+        <button class="btn" data-cid="${c.id}">Votar</button>
+      </div>
     `;
-    list.appendChild(el);
+    list.appendChild(card);
   });
-  Array.from(document.querySelectorAll(".candidate button")).forEach(b=>{
-    b.onclick = async ()=>{
-      const { data:{ user } } = await supabase.auth.getUser();
-      if(!user){ toast($("#voteMsg"), "Inicia sesión para votar."); return; }
-      if(!isUnison(user.email)){ toast($("#voteMsg"), "Solo correos @unison.mx pueden votar."); return; }
-      await castVote(b.getAttribute("data-cid"));
-    };
+
+  // Wire buttons
+  list.querySelectorAll("button[data-cid]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const { data:{ user } } = await sb.auth.getUser();
+      if(!user){ showToast("Inicia sesión para votar","err"); return; }
+      if(!isUnison(user.email)){ showToast("Solo correos @unison.mx pueden votar","err"); return; }
+      await castVote(btn.getAttribute("data-cid"));
+    });
   });
 }
 
 async function castVote(candidate_id){
-  const { data:{ user } } = await supabase.auth.getUser();
-  if(!user || !currentPoll) return;
-  const payload = { poll_id: currentPoll.id, candidate_id, user_id: user.id };
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user || !POLL) return;
 
-  const { error:up } = await supabase.from("votes").upsert(payload, { onConflict:"poll_id,user_id" });
-  if(up){ toast($("#voteMsg"), "No se pudo registrar el voto: "+up.message); return; }
+  const payload = { poll_id:POLL.id, candidate_id, user_id:user.id };
 
-  const { data:v } = await supabase.from("votes")
-       .select("*").eq("poll_id", currentPoll.id).eq("user_id", user.id).maybeSingle();
-  myVote = v ?? null;
-  toast($("#voteMsg"), "¡Voto registrado!", true);
-  await loadVoteAndResults();
+  // upsert
+  const { error } = await sb.from("votes").upsert(payload, { onConflict:"poll_id,user_id" });
+  if(error){ $("#voteMsg").textContent="No se pudo registrar el voto: "+error.message; showToast("Error guardando voto","err"); return; }
+
+  // leer mi voto y refrescar
+  const { data:v } = await sb.from("votes")
+     .select("*").eq("poll_id",POLL.id).eq("user_id",user.id).maybeSingle();
+  if(v){
+    const cand = CANDIDATES.find(x=>x.id===v.candidate_id);
+    setPillVote(cand?.name || null);
+  }
+  showToast("¡Voto registrado!","ok");
+  await loadResults();
 }
 
-async function loadVoteAndResults(){
-  if(!currentPoll) return;
-  const { data:{ user } } = await supabase.auth.getUser();
-  if(user){
-    const { data:v } = await supabase.from("votes")
-      .select("*").eq("poll_id", currentPoll.id).eq("user_id", user.id).maybeSingle();
-    if(v){ myVote=v; const cand=candidates.find(x=>x.id===v.candidate_id);
-      if(cand){ $("#myVotePill").style.display="inline-flex"; $("#myVoteName").textContent=cand.name; }
-    } else { $("#myVotePill").style.display="none"; myVote=null; }
-  }
-  const { data:all } = await supabase.from("votes").select("candidate_id").eq("poll_id", currentPoll.id);
-  const counts={}; (all??[]).forEach(v=>counts[v.candidate_id]=(counts[v.candidate_id]??0)+1);
+async function loadResults(){
+  if(!POLL) return;
+  const { data: all, error } = await sb.from("votes").select("candidate_id").eq("poll_id",POLL.id);
+  if(error){ $("#voteMsg").textContent="Error resultados: "+error.message; return; }
+  const counts = {};
+  (all||[]).forEach(v=> counts[v.candidate_id] = (counts[v.candidate_id]||0)+1 );
   renderCandidates(counts);
+
+  // my vote pill
+  const { data:{ user } } = await sb.auth.getUser();
+  if(user){
+    const { data:v } = await sb.from("votes").select("*").eq("poll_id",POLL.id).eq("user_id",user.id).maybeSingle();
+    if(v){ const cand=CANDIDATES.find(x=>x.id===v.candidate_id); setPillVote(cand?.name||null); }
+    else setPillVote(null);
+  } else setPillVote(null);
 }
 
 function subscribeRealtime(){
-  if(channel) supabase.removeChannel(channel);
-  if(!currentPoll) return;
-  channel = supabase.channel("rt-votes")
+  if(CHANNEL){ sb.removeChannel(CHANNEL); CHANNEL=null; }
+  if(!POLL) return;
+
+  CHANNEL = sb.channel("realtime-votes")
     .on("postgres_changes",
-      { event:"*", schema:"public", table:"votes", filter:`poll_id=eq.${currentPoll.id}` },
-      async ()=>{ await loadVoteAndResults(); })
-    .subscribe();
+      { event:"*", schema:"public", table:"votes", filter:`poll_id=eq.${POLL.id}` },
+      async ()=>{ await loadResults(); })
+    .subscribe((status)=> console.log("Realtime:", status));
 }
 
-/* Botones */
-$("#seedBtn").onclick = async()=>{ const { data:{ user } } = await supabase.auth.getUser();
-  if(!user){ toast($("#voteMsg"), "Inicia sesión para sembrar datos."); return; }
-  await ensurePollAndCandidates(); await loadVoteAndResults(); toast($("#voteMsg"), "Datos listos.", true);
-};
-$("#refreshBtn").onclick = async()=>{ await ensurePollAndCandidates(); await loadVoteAndResults(); };
+/* Botones adicionales */
+$("#seedBtn").addEventListener("click", async ()=>{
+  const u = await refreshStatus(); if(!u){ showToast("Inicia sesión para sembrar","err"); return; }
+  await ensurePoll(); await ensureCandidates(); await loadResults(); subscribeRealtime();
+  $("#voteMsg").textContent="Datos verificados/sembrados.";
+});
+$("#refreshBtn").addEventListener("click", async ()=>{
+  await ensurePoll(); await ensureCandidates(); await loadResults();
+});
 
-/* Inicio */
-(async ()=>{
-  await setAuthStatus();
-  await ensurePollAndCandidates();
-  await loadVoteAndResults();
+/* ========= BOOT ========= */
+async function bootData(){
+  await ensurePoll();
+  await ensureCandidates();
+  await loadResults();
   subscribeRealtime();
+}
+(async ()=>{
+  // estado inicial
+  await refreshStatus();
+  await bootData();
 })();
 </script>
 </body>
