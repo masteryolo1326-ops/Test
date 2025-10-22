@@ -1,398 +1,1381 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Votación UNISON · Neon UI + Supabase</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase JS v2 -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <style>
-    :root{
-      --glass1:rgba(255,255,255,.08); --glass2:rgba(255,255,255,.04);
-      --text:#EAF0FF; --muted:#9AA6B2; --accent:#7C8CFF; --accent2:#29D3A0; --danger:#FF6B6B;
-    }
-    html,body{height:100%}
-    body{
-      font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
-      background:
-        radial-gradient(1200px 600px at 15% -5%, #152548 0%, transparent 40%),
-        radial-gradient(900px 500px at 110% 0%, #0F1E39 0%, transparent 35%),
-        linear-gradient(135deg,#0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 100%);
-      overflow-x:hidden;
-      animation: bgShift 12s ease-in-out infinite alternate;
-    }
-    @keyframes bgShift{0%{background-position:0 0,0 0,0 0}100%{background-position:20px -20px,-30px 10px,100% 100%}}
-    .glass{background:linear-gradient(180deg,var(--glass1),var(--glass2)); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.14)}
-    .glow{box-shadow:0 10px 40px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06)}
-    .hero-grad{background:linear-gradient(160deg, rgba(124,140,255,.16), rgba(41,211,160,.10));}
-    .pill{border:1px solid rgba(255,255,255,.18)}
-    .btn{border:1px solid rgba(124,140,255,.45); background:linear-gradient(180deg,rgba(124,140,255,.25),rgba(124,140,255,.12)); color:var(--text)}
-    .btn:hover{filter:brightness(1.05); transform:translateY(-1px)}
-    .btn:active{transform:translateY(0)}
-    .btn-ok{border:1px solid rgba(41,211,160,.55); background:linear-gradient(180deg,rgba(41,211,160,.3),rgba(41,211,160,.12))}
-    .card-hover{transition:transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s}
-    .card-hover:hover{transform:translateY(-6px) scale(1.01); box-shadow:0 25px 50px rgba(0,0,0,.35)}
-    .selected{box-shadow:0 0 0 2px rgba(124,140,255,.8), 0 10px 30px rgba(124,140,255,.25)!important}
-    .meter{height:10px; background:rgba(255,255,255,.1); border-radius:999px; overflow:hidden}
-    .meter > div{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2))}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Votaciones Unison 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kodchasan:wght@200;300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            box-sizing: border-box;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            background: #0a0a0a;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.35) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 100, 255, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(138, 43, 226, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 60% 60%, rgba(255, 215, 0, 0.25) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 40%, #16213e 70%, #0f172a 100%);
+            z-index: -1;
+        }
+        
+        .gradient-bg {
+            background: transparent;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .modern-btn {
+            background: linear-gradient(135deg, #4169E1 0%, #8A2BE2 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 16px 32px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(65, 105, 225, 0.6);
+        }
+        
+        .modern-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .modern-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(65, 105, 225, 0.8);
+        }
+        
+        .modern-btn:hover::before {
+            left: 100%;
+        }
+        
+        .modern-btn:active {
+            transform: translateY(0);
+        }
+        
+        .neon-glow {
+            box-shadow: 
+                0 0 20px rgba(65, 105, 225, 0.8),
+                0 0 40px rgba(138, 43, 226, 0.6),
+                0 0 60px rgba(255, 215, 0, 0.4);
+        }
+        
+        .wifi-icon {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 1s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-out-left {
+            animation: slideOutLeft 0.6s ease-in-out forwards;
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.6s ease-in-out forwards;
+        }
+
+        .slide-out-up {
+            animation: slideOutUp 0.6s ease-in-out forwards;
+        }
+
+        .slide-in-down {
+            animation: slideInDown 0.6s ease-in-out forwards;
+        }
+
+        @keyframes slideOutLeft {
+            from { opacity: 1; transform: translateX(0) scale(1); }
+            to { opacity: 0; transform: translateX(-100px) scale(0.8); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px) scale(0.8); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+
+        @keyframes slideOutUp {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(-50px) scale(0.9); }
+        }
+
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-50px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .form-appear {
+            animation: formAppear 0.8s ease-out 0.3s both;
+        }
+
+        @keyframes formAppear {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .login-to-voting {
+            animation: loginToVoting 1.2s ease-in-out forwards;
+        }
+
+        .voting-appear {
+            animation: votingAppear 1s ease-out 0.4s both;
+        }
+
+        @keyframes loginToVoting {
+            0% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+            50% { 
+                opacity: 0; 
+                transform: translateY(-100px) scale(0.8) rotateX(45deg);
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateY(-200px) scale(0.6) rotateX(90deg);
+            }
+        }
+
+        @keyframes votingAppear {
+            0% { 
+                opacity: 0; 
+                transform: translateY(100px) scale(0.8) rotateX(-45deg);
+            }
+            50% { 
+                opacity: 0.5; 
+                transform: translateY(20px) scale(0.95) rotateX(-10deg);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1) rotateX(0deg);
+            }
+        }
+
+        .voting-exit {
+            animation: votingExit 0.8s ease-in-out forwards;
+        }
+
+        .home-return {
+            animation: homeReturn 1s ease-out 0.2s both;
+        }
+
+        .title-exit {
+            animation: titleExit 0.8s ease-in-out forwards;
+        }
+
+        .title-return {
+            animation: titleReturn 1s ease-out 0.2s both;
+        }
+
+        @keyframes votingExit {
+            from { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+            to { 
+                opacity: 0; 
+                transform: translateY(50px) scale(0.9);
+            }
+        }
+
+        @keyframes homeReturn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-50px) scale(0.9);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes titleExit {
+            from { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+            to { 
+                opacity: 0; 
+                transform: translateY(-100px) scale(0.8);
+            }
+        }
+
+        @keyframes titleReturn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-100px) scale(0.8);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Candidate Card Styles */
+
+        .candidate-card {
+            width: 100%;
+            max-width: 400px;
+            transform-style: preserve-3d;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        .candidate-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s ease;
+            z-index: 1;
+        }
+
+        .candidate-card:hover {
+            transform: rotateX(3deg) rotateY(-3deg) translateZ(30px) scale(1.02);
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.4), 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .candidate-card:hover::before {
+            left: 100%;
+        }
+
+        .candidate-avatar {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .candidate-card:hover .candidate-avatar {
+            transform: scale(1.1) rotateY(10deg);
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .nav-btn-3d {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
 </head>
-<body>
-  <!-- HEADER -->
-  <header class="max-w-6xl mx-auto px-5 pt-8 pb-4">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="glass glow rounded-2xl px-3 py-2"><span class="text-sm tracking-wide opacity-90">UNISON · Votación</span></div>
-        <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
-          <a href="#info" class="hover:text-white">Info</a>
-          <a href="#categorias" class="hover:text-white">Categorías</a>
-          <a href="#resultados" class="hover:text-white">Resultados</a>
-        </nav>
-      </div>
-      <div class="flex items-center gap-3">
-        <div id="authBadge" class="glass glow rounded-full px-4 py-2 pill text-sm text-slate-200">🔒 Desconectado</div>
-        <button id="openAuth" class="btn px-4 py-2 rounded-xl text-sm">Acceder</button>
-        <button id="logoutBtn" class="btn px-4 py-2 rounded-xl text-sm hidden">Salir</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- HERO -->
-  <section class="max-w-6xl mx-auto px-5">
-    <div class="grid md:grid-cols-2 gap-6 items-center">
-      <div class="glass hero-grad glow rounded-3xl p-8 md:p-10 card-hover">
-        <h1 class="text-3xl md:text-4xl font-extrabold leading-tight">Elecciones Estudiantiles</h1>
-        <p class="text-slate-300 mt-5">Interfaz neon‑glass conectada a Supabase, con foco en privacidad: en tus tablas solo se usa <code>user_id</code> (no copiamos emails).</p>
-        <div class="mt-6 flex gap-3">
-          <button class="btn px-5 py-3 rounded-xl" onclick="document.getElementById('categorias').scrollIntoView({behavior:'smooth'})">Comenzar a votar</button>
-          <button class="btn-ok px-5 py-3 rounded-xl" onclick="document.getElementById('info').scrollIntoView({behavior:'smooth'})">Cómo funciona</button>
+<body class="h-full gradient-bg" style="font-family: 'Kodchasan', sans-serif;">
+    <!-- Título fijo en la parte superior -->
+    <header id="mainTitle" class="fixed top-0 left-0 right-0 z-10 text-center pt-6 pb-4">
+        <div class="glass-card p-8 mx-6 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-purple-600/25 via-blue-600/25 to-yellow-400/20"></div>
+            <div class="relative z-10">
+                <h1 class="text-6xl font-bold text-white mb-3 tracking-tight">
+                    VOTACIONES UNISON
+                </h1>
+                <div class="text-2xl font-medium text-white/80 tracking-widest">
+                    2025
+                </div>
+                <div class="text-lg font-medium text-yellow-400/90 tracking-wide mt-2">
+                    SISTEMA DE PRUEBA
+                </div>
+                <div class="w-24 h-1 bg-gradient-to-r from-purple-600 to-yellow-400 mx-auto mt-4 rounded-full"></div>
+            </div>
         </div>
-      </div>
-      <figure class="glass glow rounded-3xl overflow-hidden card-hover relative">
-        <!-- Inserta tu imagen de referencia aquí -->
-        <img src="assets/landing-ref.jpg" alt="Referencia de diseño" class="w-full h-full object-cover max-h-[420px]">
-        <figcaption class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-sm text-slate-200">Layout referencia</figcaption>
-      </figure>
-    </div>
-  </section>
+    </header>
 
-  <!-- INFO -->
-  <section id="info" class="max-w-6xl mx-auto px-5 mt-10">
-    <div class="grid md:grid-cols-3 gap-5">
-      <div class="glass glow rounded-2xl p-6"><h3 class="font-semibold text-lg">Privacidad primero</h3><p class="text-slate-300 mt-1">Solo <em>user_id</em> en la DB. Si algún día se requiere email, se manejará hash/cifrado fuera del cliente.</p></div>
-      <div class="glass glow rounded-2xl p-6"><h3 class="font-semibold text-lg">Voto único</h3><p class="text-slate-300 mt-1">Índice único por encuesta + RLS; puedes cambiar tu voto (upsert) mientras esté activa.</p></div>
-      <div class="glass glow rounded-2xl p-6"><h3 class="font-semibold text-lg">Tiempo real</h3><p class="text-slate-300 mt-1">Actualización automática vía canales de Supabase.</p></div>
-    </div>
-  </section>
+    <main class="min-h-full flex flex-col items-center justify-center p-6 pt-32">
+        <div class="max-w-md w-full text-center fade-in" id="mainContent">
 
-  <!-- CATEGORÍAS / CANDIDATOS -->
-  <main id="categorias" class="max-w-6xl mx-auto px-5 mt-12">
-    <!-- Estado -->
-    <div class="glass glow rounded-2xl p-6 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full bg-emerald-500/90 grid place-items-center">✅</div>
-        <div>
-          <p class="font-semibold">Votación activa</p>
-          <p class="text-slate-300 text-sm">Termina el 15 de diciembre, 18:00</p>
+            <!-- Tarjeta UNISON -->
+            <div class="glass-card p-8 mb-8 relative overflow-hidden group max-w-lg mx-auto">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex items-center justify-center mb-6">
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl flex items-center justify-center shadow-2xl">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                                    <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                                </svg>
+                            </div>
+                            <div class="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                <div class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-white mb-2">UNISON</h2>
+                        <p class="text-white/70 text-base">Sistema de Votación Electrónica</p>
+                    </div>
+                    
+                    <!-- Slider Iniciar Sesión -->
+                    <div class="w-full relative px-4">
+                        <div id="sliderTrack" class="w-full max-w-6xl mx-auto h-20 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700 rounded-2xl relative overflow-hidden border border-gray-500/30 shadow-inner">
+                            <!-- Background gradient animation -->
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-blue-600/20 opacity-0 transition-opacity duration-300" id="sliderGlow"></div>
+                            
+                            <!-- Text -->
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span class="text-white/70 font-semibold text-base tracking-wide" id="sliderText">
+                                    Iniciar Sesión
+                                </span>
+                            </div>
+                            
+                            <!-- Slider button -->
+                            <div 
+                                id="sliderButton" 
+                                class="absolute left-2 top-2 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl cursor-grab active:cursor-grabbing shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-3xl hover:from-blue-400 hover:to-purple-500"
+                                style="transform: translateX(0px); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6), 0 0 20px rgba(138, 43, 226, 0.4); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);"
+                            >
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <!-- Success state (hidden initially) -->
+                        <div id="sliderSuccess" class="w-full max-w-6xl mx-auto h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl hidden items-center justify-center shadow-lg">
+                            <svg class="w-10 h-10 text-white mr-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-white font-bold text-lg">¡Acceso Autorizado!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="flex justify-center space-x-8">
+                <div class="flex items-center space-x-3 text-white/80">
+                    <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">Seguro</p>
+                        <p class="text-xs text-white/60">Encriptado</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 text-white/80">
+                    <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">Oficial</p>
+                        <p class="text-xs text-white/60">UNISON</p>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button id="refreshBtn" class="btn px-4 py-2 rounded-xl text-sm">Actualizar</button>
-        <button id="seedBtn" class="btn-ok px-4 py-2 rounded-xl text-sm hidden">Sembrar demo</button>
-      </div>
-    </div>
+    </main>
 
-    <!-- Presidente -->
-    <section class="mt-8 glass glow rounded-3xl p-7">
-      <header class="mb-6">
-        <h2 class="text-2xl font-bold">Presidente estudiantil</h2>
-        <p class="text-slate-300">Selecciona una opción.</p>
-      </header>
-      <div class="grid md:grid-cols-3 gap-6" id="presidentCandidates"></div>
-    </section>
+    <!-- Página de Login (oculta inicialmente) -->
+    <div id="loginPage" class="hidden min-h-full gradient-bg p-6 pt-32">
+        <div class="max-w-md mx-auto mt-32">
+            <div class="text-center mb-16 mt-20" id="loginHeader">
+                <h2 class="text-3xl font-bold text-white mb-8" style="text-shadow: 2px 2px 6px rgba(0,0,0,0.7);">INICIAR SESIÓN</h2>
+                <p class="text-white text-lg mb-4">Inicia sesión con tu correo institucional <span class="font-bold bg-gradient-to-r from-yellow-400 to-black bg-clip-text text-transparent">UNISON</span></p>
+            </div>
 
-    <!-- Vicepresidente -->
-    <section class="mt-8 glass glow rounded-3xl p-7">
-      <header class="mb-6">
-        <h2 class="text-2xl font-bold">Vicepresidente</h2>
-        <p class="text-slate-300">Selecciona una opción.</p>
-      </header>
-      <div class="grid md:grid-cols-2 gap-6" id="vicepresidentCandidates"></div>
-    </section>
-
-    <!-- Resumen -->
-    <section class="mt-8 glass glow rounded-3xl p-7">
-      <h3 class="text-xl font-semibold">Resumen</h3>
-      <div class="mt-4 grid md:grid-cols-2 gap-4 text-sm">
-        <div class="glass rounded-xl p-4"><span class="text-slate-300">Presidente:</span> <span id="selectedPresident" class="ml-2 font-semibold">–</span></div>
-        <div class="glass rounded-xl p-4"><span class="text-slate-300">Vicepresidente:</span> <span id="selectedVicePresident" class="ml-2 font-semibold">–</span></div>
-      </div>
-      <div class="mt-6"><button id="submitVote" class="btn-ok px-6 py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled>Enviar voto</button></div>
-    </section>
-
-    <!-- Resultados en vivo -->
-    <section id="resultados" class="mt-10 grid md:grid-cols-2 gap-6">
-      <div class="glass glow rounded-2xl p-6"><h4 class="font-semibold">Resultados — Presidente</h4><div id="resultsPresident" class="space-y-4 mt-4"></div></div>
-      <div class="glass glow rounded-2xl p-6"><h4 class="font-semibold">Resultados — Vicepresidente</h4><div id="resultsVice" class="space-y-4 mt-4"></div></div>
-    </section>
-  </main>
-
-  <!-- Modal de éxito -->
-  <div id="successModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50">
-    <div class="glass glow rounded-2xl p-8 max-w-md mx-4 text-center">
-      <div class="w-16 h-16 rounded-full bg-emerald-500/90 grid place-items-center mx-auto mb-4">✅</div>
-      <h3 class="text-2xl font-bold">¡Voto enviado!</h3>
-      <p class="text-slate-300 mt-2">Tu voto fue registrado. En producción se emite un recibo sin PII.</p>
-      <button class="btn mt-5 px-5 py-2 rounded-xl" onclick="document.getElementById('successModal').classList.add('hidden')">Cerrar</button>
-    </div>
-  </div>
-
-  <!-- Modal Auth -->
-  <div id="authModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50">
-    <div class="glass glow rounded-2xl p-6 w-full max-w-md mx-4">
-      <div class="flex items-center justify-between mb-3"><h3 class="text-xl font-bold">Acceso institucional</h3><button class="btn px-3 py-1 rounded-lg text-sm" onclick="toggleAuth(false)">Cerrar</button></div>
-      <p class="text-slate-300 text-sm mb-4">Solo correos <code>@unison.mx</code>. No guardamos correos en tus tablas.</p>
-      <form id="signupForm" class="space-y-3" novalidate>
-        <input id="su_email" class="w-full glass rounded-xl px-3 py-2" type="email" placeholder="Email @unison.mx" required />
-        <input id="su_pass" class="w-full glass rounded-xl px-3 py-2" type="password" placeholder="Contraseña (mín. 6)" minlength="6" required />
-        <button class="btn-ok w-full px-4 py-2 rounded-xl" type="submit">Crear cuenta</button>
-        <div id="su_err" class="text-xs text-rose-300"></div>
-      </form>
-      <div class="my-3 h-px bg-white/20"></div>
-      <form id="loginForm" class="space-y-3" novalidate>
-        <input id="li_email" class="w-full glass rounded-xl px-3 py-2" type="email" placeholder="Email @unison.mx" required />
-        <input id="li_pass" class="w-full glass rounded-xl px-3 py-2" type="password" placeholder="Contraseña" required />
-        <div class="flex items-center gap-3">
-          <button class="btn w-full px-4 py-2 rounded-xl" type="submit">Iniciar sesión</button>
-          <button id="resetBtn" class="btn px-4 py-2 rounded-xl" type="button">Olvidé</button>
+            <div class="glass-card p-8" id="loginCard">
+                <form id="loginForm">
+                    <div class="mb-6">
+                        <label for="username" class="flex items-center space-x-2 text-white font-medium mb-3">
+                            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            <span>USUARIO</span>
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username"
+                                class="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all backdrop-blur-sm"
+                                placeholder="Ingresa tu usuario"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <label for="password" class="flex items-center space-x-2 text-white font-medium mb-3">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            <span>CONTRASEÑA</span>
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password"
+                                class="w-full px-4 py-4 bg-white/5 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all backdrop-blur-sm"
+                                placeholder="Ingresa tu contraseña"
+                                required
+                            >
+                        </div>
+                    </div>
+                    
+                    <button 
+                        type="submit"
+                        class="modern-btn w-full flex items-center justify-center space-x-3 group/btn"
+                    >
+                        <svg class="w-6 h-6 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>ACCEDER AL SISTEMA</span>
+                    </button>
+                </form>
+                
+                <div class="mt-4 text-center text-gray-600 text-sm">
+                    <div class="flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p>¿Olvidaste tu contraseña? <a href="#" class="text-blue-600 hover:underline flex items-center space-x-1">
+                            <span>Recuperar</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a></p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="li_err" class="text-xs text-rose-300"></div>
-      </form>
     </div>
-  </div>
 
-  <script>
-    /* ================== CONFIG ================== */
-    const PROJECT_URL  = "https://amtcdnaenohempvuwjfz.supabase.co"; // ← tu proyecto
-    const ANON_KEY     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtdGNkbmFlbm9oZW1wdnV3amZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1MTI4ODAsImV4cCI6MjA3MjA4ODg4MH0.u32A7Jd2MjNsrWaW9ENtjfu0tjXkonosHNpYYFhucs4"; // ← tu anon key (pública)
-    const REDIRECT_URL = "https://masteryolo1326-ops.github.io/Test/"; // ← tu redirect
-    const DOMAIN_OK    = "unison.mx";
+    <!-- Sistema de Votación (oculto inicialmente) -->
+    <div id="votingSystem" class="hidden min-h-full gradient-bg p-6 pt-32">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <header class="text-center mb-8">
+                <div class="flex justify-end items-center mb-4">
+                    <div class="flex items-center space-x-2 bg-green-500/20 px-4 py-2 rounded-lg backdrop-blur-sm border border-green-300/30">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-white">Sistema Activo</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-center space-x-3 mb-2">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl font-bold text-white" style="text-shadow: 2px 2px 6px rgba(0,0,0,0.7);">Sistema de Votación</h2>
+                </div>
+                <div class="flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                    </svg>
+                    <p class="text-white text-lg">Elige tu candidato preferido</p>
+                </div>
+            </header>
 
-    /* ================== CLIENTE ================== */
-    const sb = window.supabase.createClient(PROJECT_URL, ANON_KEY);
+            <!-- Voting Status -->
+            <div class="glass-card p-8 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Estado de la Votación</h2>
+                            <p class="text-white/60">Resultados en tiempo real</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right">
+                                <div class="text-4xl font-bold text-white" id="totalVotes">0</div>
+                                <div class="text-sm text-white/60">votos totales</div>
+                            </div>
+                            <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button id="resetBtn" class="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-8 py-3 rounded-2xl transition-all duration-300 flex items-center space-x-3 mx-auto font-medium shadow-lg hover:shadow-xl hover:scale-105">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span>Reiniciar Votación</span>
+                    </button>
+                </div>
+            </div>
 
-    const $ = (s)=>document.querySelector(s);
-    function isUnison(email){
-      const e = (email||'').trim().toLowerCase();
-      return e.includes('@') && !e.includes(' ') && e.endsWith('@'+DOMAIN_OK) && e.split('@')[0].length>0;
-    }
-    function toast(msg){ const t = document.getElementById('authBadge'); t.textContent = msg; }
+            <!-- 3D Candidates Carousel -->
+            <div class="relative mb-8">
+                <div class="carousel-3d-container" style="height: 400px; perspective: 800px; perspective-origin: center center;">
+                    <div class="carousel-3d" id="carousel3d" style="position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;">
+                        <!-- Candidates will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Navigation buttons -->
+                <button id="prevBtn" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm border border-white/30 text-white p-3 rounded-full transition-all hover:bg-white/30 z-10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                
+                <button id="nextBtn" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm border border-white/30 text-white p-3 rounded-full transition-all hover:bg-white/30 z-10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                
+                <!-- Dots indicator -->
+                <div class="flex justify-center mt-6 space-x-3" id="dotsContainer">
+                    <!-- Dots will be populated by JavaScript -->
+                </div>
+            </div>
 
-    // Estado auth
-    async function refreshStatus(){
-      const { data:{ user } } = await sb.auth.getUser();
-      if(user){
-        document.getElementById('authBadge').textContent = '✅ Conectado'; document.getElementById('logoutBtn').classList.remove('hidden');
-      } else {
-        document.getElementById('authBadge').textContent = '🔒 Desconectado'; document.getElementById('logoutBtn').classList.add('hidden');
-      }
-      return user;
-    }
+            <!-- Results -->
+            <div class="glass-card p-8">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M16 8v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0V2a2 2 0 00-2-2H8a2 2 0 00-2 2v2m8 0a2 2 0 012 2v2M8 4a2 2 0 002-2V0"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-white">Resultados</h2>
+                            <p class="text-white/60">Actualizados en tiempo real</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 bg-emerald-500/20 px-4 py-2 rounded-full border border-emerald-500/30">
+                        <div class="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm text-emerald-400 font-semibold">LIVE</span>
+                    </div>
+                </div>
+                <div id="resultsContainer">
+                    <!-- Results will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function toggleAuth(show){ document.getElementById('authModal').classList[show?'remove':'add']('hidden'); }
-    document.getElementById('openAuth').addEventListener('click', ()=> toggleAuth(true));
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-card p-8 max-w-md w-full shadow-2xl transform scale-95 transition-all duration-300" id="modalContent">
+            <div class="text-center">
+                <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">Confirmar Voto</h3>
+                <p class="text-white/80 mb-2">¿Estás seguro de que deseas votar por:</p>
+                <p class="text-xl font-semibold text-white mb-6" id="selectedCandidate"></p>
+                <p class="text-sm text-white/70 mb-6">Esta acción no se puede deshacer</p>
+                
+                <div class="flex space-x-4">
+                    <button id="cancelVote" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors">
+                        Cancelar
+                    </button>
+                    <button id="confirmVote" class="flex-1 modern-btn text-white py-3 px-6 rounded-lg font-semibold">
+                        Confirmar Voto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    // Signup
-    document.getElementById('signupForm').addEventListener('submit', async (e)=>{
-      e.preventDefault(); const email = document.getElementById('su_email').value.trim().toLowerCase(); const pass = document.getElementById('su_pass').value.trim();
-      if(!isUnison(email)){ document.getElementById('su_err').textContent = 'Usa tu correo @unison.mx'; return; }
-      if(pass.length<6){ document.getElementById('su_err').textContent = 'Contraseña demasiado corta'; return; }
-      document.getElementById('su_err').textContent='';
-      const { error } = await sb.auth.signUp({ email, password:pass, options:{ emailRedirectTo: REDIRECT_URL }});
-      if(error){ document.getElementById('su_err').textContent = error.message; } else { toast('Cuenta creada. Verifica tu correo.'); toggleAuth(false);} 
-      await refreshStatus();
-    });
+    <script>
+        class VotingApp {
+            constructor() {
+                this.currentPage = 'home';
+                this.candidates = [
+                    { id: 1, name: "Planilla 1", party: "Planilla de Prueba", votes: 0 },
+                    { id: 2, name: "Planilla 2", party: "Planilla de Prueba", votes: 0 },
+                    { id: 3, name: "Planilla 3", party: "Planilla de Prueba", votes: 0 },
+                    { id: 4, name: "Planilla 4", party: "Planilla de Prueba", votes: 0 }
+                ];
+                this.hasVoted = false;
+                this.currentSlide = 0;
+                this.selectedCandidateId = null;
+                this.userInteracting = false;
+                this.totalRotation = 0;
+                this.init();
+            }
 
-    // Login
-    document.getElementById('loginForm').addEventListener('submit', async (e)=>{
-      e.preventDefault(); const email = document.getElementById('li_email').value.trim().toLowerCase(); const pass = document.getElementById('li_pass').value.trim();
-      if(!isUnison(email)){ document.getElementById('li_err').textContent = 'Solo @unison.mx'; return; }
-      document.getElementById('li_err').textContent='';
-      const { error } = await sb.auth.signInWithPassword({ email, password:pass });
-      if(error){ document.getElementById('li_err').textContent = error.message; } else { toggleAuth(false); }
-      await refreshStatus(); await bootData();
-    });
+            init() {
+                this.setupEventListeners();
+                this.showPage('home');
+            }
 
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', async ()=>{ await sb.auth.signOut(); await refreshStatus(); });
+            setupEventListeners() {
+                // Slider iniciar sesión
+                this.setupSlider();
 
-    // Reset
-    document.getElementById('resetBtn').addEventListener('click', async ()=>{
-      const email = prompt('Escribe tu correo @unison.mx:'); if(!email) return; if(!isUnison(email)) return alert('Debe ser @unison.mx');
-      const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: REDIRECT_URL });
-      alert(error ? 'Error: '+error.message : 'Revisa tu correo.');
-    });
 
-    // Procesa hash de verificación/recovery
-    (async ()=>{
-      const hash = new URLSearchParams(location.hash.slice(1));
-      const type = hash.get('type');
-      if(type==='recovery'){
-        const nueva = prompt('Nueva contraseña (mín. 6):');
-        if(nueva && nueva.length>=6){ const { error } = await sb.auth.updateUser({ password:nueva }); alert(error?('Error: '+error.message):'Contraseña actualizada.'); }
-      } else if(type==='signup' || type==='email_change' || hash.get('access_token')){
-        history.replaceState(null,'',location.pathname+location.search);
-        await refreshStatus(); await bootData();
-      }
-    })();
 
-    /* ================== DATA (Polls/Candidates/Votes) ================== */
-    const POLLS = { president:null, vicepresident:null };
-    const CANDS = { president:[],  vicepresident:[] };
-    const CHANNELS = [];
+                // Formulario de login
+                document.getElementById('loginForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
 
-    async function ensurePoll(title){
-      const { data:rows, error } = await sb.from('polls').select('*').eq('title', title).limit(1);
-      if(error) { console.error(error); return null; }
-      if(!rows || rows.length===0){
-        const { data:created, error:e2 } = await sb.from('polls').insert({ title, is_active:true }).select().limit(1);
-        if(e2){ console.warn('No se pudo crear encuesta (RLS):', e2.message); return null; }
-        return created[0];
-      }
-      return rows[0];
-    }
+                // Botón reset
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.resetVoting();
+                });
 
-    async function ensureCandidates(poll, seed){
-      if(!poll) return [];
-      const { data:cands, error } = await sb.from('candidates').select('*').eq('poll_id', poll.id).order('created_at', {ascending:true});
-      if(error){ console.error(error); return []; }
-      let list = cands||[];
-      if(list.length===0 && seed && seed.length){
-        const prepared = seed.map(s=> ({ poll_id: poll.id, name: s.name, info: s.info }));
-        const { data:created, error:e2 } = await sb.from('candidates').insert(prepared).select();
-        if(e2){ console.warn('No se pudieron crear candidatos (RLS):', e2.message); } else { list = created; }
-      }
-      return list;
-    }
+                // Carousel controls - Add event delegation for dynamic elements
+                document.addEventListener('click', (e) => {
+                    if (e.target.id === 'prevBtn' || e.target.closest('#prevBtn')) {
+                        this.previousSlide();
+                    }
+                    if (e.target.id === 'nextBtn' || e.target.closest('#nextBtn')) {
+                        this.nextSlide();
+                    }
+                });
 
-    function renderCandidates(category){
-      const container = document.getElementById(category+"Candidates"); container.innerHTML='';
-      const list = CANDS[category];
-      list.forEach(c=>{
-        const card = document.createElement('article');
-        card.className = 'glass glow rounded-2xl p-6 card-hover cursor-pointer';
-        const initials = (c.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-        card.innerHTML = `
-          <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-fuchsia-500 grid place-items-center text-white text-2xl font-bold mb-4">${initials}</div>
-          <h3 class="font-semibold text-lg">${c.name}</h3>
-          <p class="text-slate-300 text-sm">${c.info||''}</p>`;
-        card.addEventListener('click', ()=>{
-          document.querySelectorAll('#'+category+'Candidates article').forEach(el=>el.classList.remove('selected'));
-          card.classList.add('selected');
-          votes[category] = c; updateSummary();
-          document.getElementById('submitVote').disabled = !(votes.president && votes.vicepresident);
-        });
-        container.appendChild(card);
-      });
-    }
 
-    function renderResults(category, counts){
-      const wrap = document.getElementById(category==='president'?'resultsPresident':'resultsVice');
-      wrap.innerHTML='';
-      const total = Object.values(counts).reduce((a,b)=>a+b,0) || 0;
-      CANDS[category].forEach(c=>{
-        const n = counts[c.id]||0; const pct = total? Math.round(n*100/total):0;
-        const row = document.createElement('div');
-        row.innerHTML = `
-          <div class="flex justify-between text-sm"><span>${c.name}</span><span>${n} · ${pct}%</span></div>
-          <div class="meter mt-1"><div style="width:${pct}%"></div></div>`;
-        wrap.appendChild(row);
-      });
-    }
 
-    async function loadResults(){
-      await Promise.all(['president','vicepresident'].map(async cat =>{
-        const poll = POLLS[cat]; if(!poll) return;
-        const { data:all, error } = await sb.from('votes').select('candidate_id').eq('poll_id', poll.id);
-        if(error){ console.error(error); return; }
-        const counts = {}; (all||[]).forEach(v=> counts[v.candidate_id] = (counts[v.candidate_id]||0)+1);
-        renderResults(cat, counts);
-      }));
-    }
+                // Modal controls - Fixed cancel button
+                const cancelBtn = document.getElementById('cancelVote');
+                const confirmBtn = document.getElementById('confirmVote');
+                
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Cancel clicked'); // Debug
+                    this.closeModal();
+                });
 
-    async function castVote(poll, candidate){
-      const { data:{ user } } = await sb.auth.getUser();
-      if(!user){ alert('Inicia sesión para votar'); return false; }
-      if(!isUnison(user.email)){ alert('Solo correos @unison.mx'); return false; }
-      const payload = { poll_id: poll.id, candidate_id: candidate.id, user_id: user.id };
-      const { error } = await sb.from('votes').upsert(payload, { onConflict: 'poll_id,user_id' });
-      if(error){ alert('No se pudo guardar el voto: '+error.message); return false; }
-      return true;
-    }
+                confirmBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.confirmVote();
+                });
 
-    function subscribeRealtime(){
-      // Limpia canales previos
-      while(CHANNELS.length){ const ch = CHANNELS.pop(); sb.removeChannel(ch); }
-      ['president','vicepresident'].forEach(cat=>{
-        const poll = POLLS[cat]; if(!poll) return;
-        const ch = sb.channel('realtime-'+cat)
-          .on('postgres_changes', {event:'*', schema:'public', table:'votes', filter:`poll_id=eq.${poll.id}`}, async ()=>{ await loadResults(); })
-          .subscribe();
-        CHANNELS.push(ch);
-      });
-    }
+                // Close modal on backdrop click
+                document.getElementById('confirmationModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'confirmationModal') {
+                        this.closeModal();
+                    }
+                });
 
-    // Votos en memoria UI
-    let votes = { president:null, vicepresident:null };
-    function updateSummary(){
-      document.getElementById('selectedPresident').textContent = votes.president? votes.president.name : '–';
-      document.getElementById('selectedVicePresident').textContent = votes.vicepresident? votes.vicepresident.name : '–';
-    }
 
-    document.getElementById('submitVote').addEventListener('click', async ()=>{
-      if(!(votes.president && votes.vicepresident)) return;
-      const ok1 = await castVote(POLLS.president, votes.president);
-      const ok2 = await castVote(POLLS.vicepresident, votes.vicepresident);
-      if(ok1 && ok2){ document.getElementById('successModal').classList.remove('hidden'); await loadResults(); }
-    });
+            }
 
-    document.getElementById('refreshBtn').addEventListener('click', async ()=>{ await bootData(); });
+            setupSlider() {
+                const sliderButton = document.getElementById('sliderButton');
+                const sliderTrack = document.getElementById('sliderTrack');
+                const sliderGlow = document.getElementById('sliderGlow');
+                const sliderText = document.getElementById('sliderText');
+                const sliderSuccess = document.getElementById('sliderSuccess');
+                
+                let isDragging = false;
+                let startX = 0;
+                let currentX = 0;
+                let isCompleted = false;
+                
+                // Calculate max distance more accurately
+                const getMaxDistance = () => {
+                    return sliderTrack.offsetWidth - sliderButton.offsetWidth - 8; // 8px total padding (4px each side)
+                };
+                
+                // Mouse events
+                sliderButton.addEventListener('mousedown', (e) => {
+                    if (isCompleted) return;
+                    isDragging = true;
+                    startX = e.clientX - currentX;
+                    sliderButton.style.cursor = 'grabbing';
+                    sliderGlow.style.opacity = '1';
+                    sliderGlow.style.transition = 'opacity 0.2s ease';
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging || isCompleted) return;
+                    
+                    e.preventDefault();
+                    const maxDistance = getMaxDistance();
+                    const newX = e.clientX - startX;
+                    currentX = Math.max(0, Math.min(newX, maxDistance));
+                    
+                    sliderButton.style.transform = `translateX(${currentX}px)`;
+                    
+                    // Update glow intensity based on progress
+                    const progress = currentX / maxDistance;
+                    sliderGlow.style.opacity = Math.min(1, progress * 1.5);
+                    
+                    // Update text opacity more gradually
+                    sliderText.style.opacity = Math.max(0, 1 - (progress * 1.2));
+                    
+                    // Check if slider is completed - need to reach 95% to complete
+                    if (progress >= 0.95) {
+                        this.completeSlider();
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    if (!isDragging || isCompleted) return;
+                    
+                    isDragging = false;
+                    sliderButton.style.cursor = 'grab';
+                    
+                    // If not completed, reset slider with animation
+                    const maxDistance = getMaxDistance();
+                    const progress = currentX / maxDistance;
+                    if (progress < 0.95) {
+                        this.resetSlider();
+                    }
+                });
+                
+                // Touch events for mobile
+                sliderButton.addEventListener('touchstart', (e) => {
+                    if (isCompleted) return;
+                    isDragging = true;
+                    startX = e.touches[0].clientX - currentX;
+                    sliderGlow.style.opacity = '1';
+                    sliderGlow.style.transition = 'opacity 0.2s ease';
+                    e.preventDefault(); // Prevent scrolling
+                });
+                
+                document.addEventListener('touchmove', (e) => {
+                    if (!isDragging || isCompleted) return;
+                    
+                    e.preventDefault();
+                    const maxDistance = getMaxDistance();
+                    const newX = e.touches[0].clientX - startX;
+                    currentX = Math.max(0, Math.min(newX, maxDistance));
+                    
+                    sliderButton.style.transform = `translateX(${currentX}px)`;
+                    
+                    const progress = currentX / maxDistance;
+                    sliderGlow.style.opacity = Math.min(1, progress * 1.5);
+                    sliderText.style.opacity = Math.max(0, 1 - (progress * 1.2));
+                    
+                    if (progress >= 0.95) {
+                        this.completeSlider();
+                    }
+                }, { passive: false });
+                
+                document.addEventListener('touchend', () => {
+                    if (!isDragging || isCompleted) return;
+                    
+                    isDragging = false;
+                    
+                    const maxDistance = getMaxDistance();
+                    const progress = currentX / maxDistance;
+                    if (progress < 0.95) {
+                        this.resetSlider();
+                    }
+                });
+                
+                // Store completion state
+                this.sliderCompleted = () => isCompleted;
+                this.resetSliderState = () => {
+                    isCompleted = false;
+                    currentX = 0;
+                };
+            }
+            
+            resetSlider() {
+                const sliderButton = document.getElementById('sliderButton');
+                const sliderGlow = document.getElementById('sliderGlow');
+                const sliderText = document.getElementById('sliderText');
+                
+                // Reset position with smooth animation
+                sliderButton.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                sliderButton.style.transform = 'translateX(0px)';
+                
+                // Reset glow and text with transitions
+                sliderGlow.style.transition = 'opacity 0.4s ease-out';
+                sliderGlow.style.opacity = '0';
+                
+                sliderText.style.transition = 'opacity 0.4s ease-out';
+                sliderText.style.opacity = '1';
+                
+                // Reset currentX after animation
+                setTimeout(() => {
+                    if (this.resetSliderState) {
+                        this.resetSliderState();
+                    }
+                    currentX = 0;
+                    sliderButton.style.transition = '';
+                    sliderGlow.style.transition = '';
+                    sliderText.style.transition = '';
+                }, 600);
+            }
+            
+            completeSlider() {
+                const sliderTrack = document.getElementById('sliderTrack');
+                const sliderSuccess = document.getElementById('sliderSuccess');
+                const sliderButton = document.getElementById('sliderButton');
+                const sliderGlow = document.getElementById('sliderGlow');
+                
+                // Mark as completed to prevent further interaction
+                if (this.resetSliderState) {
+                    // Set completion state
+                    this.sliderCompleted = () => true;
+                }
+                
+                // Smooth transition to success state
+                sliderTrack.style.transition = 'opacity 0.5s ease-out';
+                sliderTrack.style.opacity = '0';
+                
+                setTimeout(() => {
+                    sliderTrack.style.display = 'none';
+                    sliderSuccess.style.display = 'flex';
+                    sliderSuccess.style.opacity = '0';
+                    sliderSuccess.style.transition = 'opacity 0.5s ease-in';
+                    
+                    // Fade in success message
+                    setTimeout(() => {
+                        sliderSuccess.style.opacity = '1';
+                    }, 50);
+                }, 500);
+                
+                // Animate to login page after longer delay
+                setTimeout(() => {
+                    this.animateToLogin();
+                }, 2500);
+            }
 
-    // Sembrar demo manual (visible si ?seed=1 en URL)
-    (function(){ const u = new URL(location.href); if(u.searchParams.get('seed')==='1') document.getElementById('seedBtn').classList.remove('hidden'); })();
-    document.getElementById('seedBtn').addEventListener('click', async ()=>{
-      const u = await refreshStatus(); if(!u) return alert('Inicia sesión');
-      await bootData(true); alert('Semilla intentada (revisa RLS si falla).');
-    });
+            animateToLogin() {
+                const mainContent = document.getElementById('mainContent');
+                
+                // Animar salida de elementos
+                mainContent.classList.add('slide-out-left');
+                
+                setTimeout(() => {
+                    this.showPage('login');
+                    
+                    // Animar entrada de elementos de login
+                    const loginHeader = document.getElementById('loginHeader');
+                    const loginCard = document.getElementById('loginCard');
+                    
+                    loginHeader.classList.add('slide-in-down');
+                    loginCard.classList.add('form-appear');
+                }, 600);
+            }
 
-    async function bootData(trySeed=false){
-      // Define/asegura encuestas
-      POLLS.president     = await ensurePoll('Presidente Estudiantil');
-      POLLS.vicepresident = await ensurePoll('Vicepresidente');
-      // Candidatos (solo si la tabla está vacía y RLS lo permite)
-      CANDS.president = await ensureCandidates(POLLS.president, trySeed? [
-        {name:'Ana Martínez', info:'Ing. Sistemas · 4º'},
-        {name:'Carlos López', info:'Administración · 3º'},
-        {name:'Sofía Ramírez', info:'Psicología · 5º'}
-      ]:null);
-      CANDS.vicepresident = await ensureCandidates(POLLS.vicepresident, trySeed? [
-        {name:'Diego Torres', info:'Medicina · 2º'},
-        {name:'Laura Vega', info:'Derecho · 4º'}
-      ]:null);
-      renderCandidates('president');
-      renderCandidates('vicepresident');
-      await loadResults();
-      subscribeRealtime();
-    }
+            animateToHome() {
+                const loginHeader = document.getElementById('loginHeader');
+                const loginCard = document.getElementById('loginCard');
+                
+                // Animar salida de elementos de login
+                loginHeader.classList.add('slide-out-up');
+                loginCard.classList.add('slide-out-left');
+                
+                setTimeout(() => {
+                    this.showPage('home');
+                    
+                    // Resetear clases de animación
+                    const mainContent = document.getElementById('mainContent');
+                    mainContent.classList.remove('slide-out-left');
+                    mainContent.classList.add('slide-in-right');
+                    
+                    // Limpiar clases de login
+                    loginHeader.classList.remove('slide-in-down', 'slide-out-up');
+                    loginCard.classList.remove('form-appear', 'slide-out-left');
+                }, 600);
+            }
 
-    // Auth state listener
-    sb.auth.onAuthStateChange(async ()=>{ await refreshStatus(); });
+            showPage(page) {
+                // Ocultar todas las páginas
+                document.querySelector('main').classList.add('hidden');
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('votingSystem').classList.add('hidden');
 
-    // Arranque
-    (async ()=>{ await refreshStatus(); await bootData(); })();
-  </script>
-</body>
+                // Mostrar la página solicitada
+                switch(page) {
+                    case 'home':
+                        document.querySelector('main').classList.remove('hidden');
+                        break;
+                    case 'login':
+                        document.getElementById('loginPage').classList.remove('hidden');
+                        break;
+                    case 'voting':
+                        document.getElementById('votingSystem').classList.remove('hidden');
+                        this.initVotingSystem();
+                        break;
+                }
+                this.currentPage = page;
+            }
+
+            handleLogin() {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                // Simulación de autenticación
+                if (username && password) {
+                    this.showLoginSuccess();
+                    setTimeout(() => {
+                        this.animateToVoting();
+                    }, 1500);
+                } else {
+                    this.showLoginError();
+                }
+            }
+
+            animateToVoting() {
+                const loginPage = document.getElementById('loginPage');
+                const mainTitle = document.getElementById('mainTitle');
+                
+                // Animar salida del título y login
+                mainTitle.classList.add('title-exit');
+                loginPage.classList.add('login-to-voting');
+                
+                setTimeout(() => {
+                    this.showPage('voting');
+                    
+                    // Animar entrada del sistema de votación
+                    const votingSystem = document.getElementById('votingSystem');
+                    votingSystem.classList.add('voting-appear');
+                }, 1200);
+            }
+
+            showLoginSuccess() {
+                const message = document.createElement('div');
+                message.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                message.innerHTML = '¡Acceso autorizado! Redirigiendo...';
+                document.body.appendChild(message);
+                
+                setTimeout(() => {
+                    message.remove();
+                }, 3000);
+            }
+
+            showLoginError() {
+                const message = document.createElement('div');
+                message.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                message.innerHTML = 'Por favor completa todos los campos';
+                document.body.appendChild(message);
+                
+                setTimeout(() => {
+                    message.remove();
+                }, 3000);
+            }
+
+            logout() {
+                const votingSystem = document.getElementById('votingSystem');
+                
+                // Animar salida del sistema de votación
+                votingSystem.classList.add('voting-exit');
+                
+                setTimeout(() => {
+                    this.hasVoted = false;
+                    document.getElementById('username').value = '';
+                    document.getElementById('password').value = '';
+                    this.showPage('home');
+                    
+                    // Animar entrada de la página principal y título
+                    const mainContent = document.getElementById('mainContent');
+                    const mainTitle = document.getElementById('mainTitle');
+                    mainContent.classList.add('home-return');
+                    mainTitle.classList.add('title-return');
+                    
+                    // Limpiar clases de animación
+                    setTimeout(() => {
+                        votingSystem.classList.remove('voting-exit', 'voting-appear');
+                        mainContent.classList.remove('home-return');
+                        mainTitle.classList.remove('title-exit', 'title-return');
+                        document.getElementById('loginPage').classList.remove('login-to-voting');
+                    }, 1000);
+                }, 800);
+            }
+
+            initVotingSystem() {
+                this.renderCandidates();
+                this.renderResults();
+                this.updateTotalVotes();
+                this.startAutoCarousel();
+            }
+
+            startAutoCarousel() {
+                // Auto-rotate carousel every 4 seconds
+                if (this.carouselInterval) {
+                    clearInterval(this.carouselInterval);
+                }
+                this.carouselInterval = setInterval(() => {
+                    if (!this.hasVoted && !this.userInteracting) {
+                        this.nextSlide();
+                    }
+                }, 4000);
+            }
+
+            stopAutoCarousel() {
+                if (this.carouselInterval) {
+                    clearInterval(this.carouselInterval);
+                    this.carouselInterval = null;
+                }
+            }
+
+            updateCarousel3D() {
+                const carousel = document.getElementById('carousel3d');
+                const angleStep = 360 / this.candidates.length;
+                this.totalRotation = -this.currentSlide * angleStep;
+                carousel.style.transform = `rotateY(${this.totalRotation}deg)`;
+            }
+
+            nextSlide() {
+                this.userInteracting = true;
+                this.stopAutoCarousel();
+                
+                // Always continue rotating forward
+                this.currentSlide = (this.currentSlide + 1) % this.candidates.length;
+                this.totalRotation -= 360 / this.candidates.length;
+                
+                const carousel = document.getElementById('carousel3d');
+                carousel.style.transform = `rotateY(${this.totalRotation}deg)`;
+                
+                this.updateDots();
+                if (!this.hasVoted) {
+                    setTimeout(() => {
+                        this.userInteracting = false;
+                        this.startAutoCarousel();
+                    }, 3000);
+                }
+            }
+
+            previousSlide() {
+                this.userInteracting = true;
+                this.stopAutoCarousel();
+                
+                // Always continue rotating backward
+                this.currentSlide = this.currentSlide === 0 ? this.candidates.length - 1 : this.currentSlide - 1;
+                this.totalRotation += 360 / this.candidates.length;
+                
+                const carousel = document.getElementById('carousel3d');
+                carousel.style.transform = `rotateY(${this.totalRotation}deg)`;
+                
+                this.updateDots();
+                if (!this.hasVoted) {
+                    setTimeout(() => {
+                        this.userInteracting = false;
+                        this.startAutoCarousel();
+                    }, 3000);
+                }
+            }
+
+            goToSlide(index) {
+                this.userInteracting = true;
+                this.stopAutoCarousel();
+                this.currentSlide = index;
+                this.updateCarousel3D();
+                this.updateDots();
+                if (!this.hasVoted) {
+                    setTimeout(() => {
+                        this.userInteracting = false;
+                        this.startAutoCarousel();
+                    }, 3000);
+                }
+            }
+
+            updateDots() {
+                const dotsContainer = document.getElementById('dotsContainer');
+                dotsContainer.innerHTML = this.candidates.map((_, index) => `
+                    <button 
+                        class="w-4 h-4 rounded-full transition-all duration-300 ${index === this.currentSlide ? 'bg-white scale-125' : 'bg-white/40'}"
+                        onclick="votingApp.goToSlide(${index})"
+                    ></button>
+                `).join('');
+            }
+
+            renderCandidates() {
+                const carousel3d = document.getElementById('carousel3d');
+                const dotsContainer = document.getElementById('dotsContainer');
+                const angleStep = 360 / this.candidates.length;
+                const radius = 220; // Distance from center
+                
+                // Render candidate cards in 3D carousel
+                carousel3d.innerHTML = this.candidates.map((candidate, index) => {
+                    const angle = index * angleStep;
+                    return `
+                        <div class="carousel-3d-item" style="
+                            position: absolute;
+                            left: 50%;
+                            top: 50%;
+                            width: 220px;
+                            height: 280px;
+                            margin-left: -110px;
+                            margin-top: -140px;
+                            transform: rotateY(${angle}deg) translateZ(${radius}px);
+                            transform-style: preserve-3d;
+                            backface-visibility: visible;
+                        ">
+                            <div class="candidate-card rounded-2xl p-4 border border-gray-300 shadow-2xl relative overflow-hidden h-full transition-all duration-300" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;">
+                                <div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30"></div>
+                                <div class="text-center mb-4 relative z-10" style="-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;">
+                                    <div class="candidate-avatar w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 rounded-2xl mx-auto mb-3 flex items-center justify-center text-white text-lg font-bold shadow-2xl relative">
+                                        ${candidate.name.split(' ').map(n => n[0]).join('')}
+                                        <div class="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                                            <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-lg font-bold text-gray-800 mb-1">${candidate.name}</h3>
+                                    <p class="text-gray-600 text-xs font-medium">${candidate.party}</p>
+                                    <p class="text-gray-500 text-xs mt-1">Partido de Prueba</p>
+                                    <div class="w-8 h-0.5 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto mt-2 rounded-full"></div>
+                                </div>
+                                <button 
+                                    class="modern-btn w-full flex items-center justify-center space-x-1 group/btn relative z-10 text-xs py-2 transition-all duration-300 ${this.hasVoted ? 'opacity-50 cursor-not-allowed' : ''}"
+                                    data-candidate-id="${candidate.id}"
+                                    ${this.hasVoted ? 'disabled' : ''}
+                                >
+                                    ${this.hasVoted ? 
+                                        `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span>Ya Votaste</span>` : 
+                                        `<svg class="w-3 h-3 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/>
+                                        </svg>
+                                        <span>Votar por ${candidate.name.split(' ')[0]}</span>`
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Add event listeners to vote buttons
+                const voteButtons = carousel3d.querySelectorAll('button[data-candidate-id]');
+                voteButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const candidateId = parseInt(button.getAttribute('data-candidate-id'));
+                        
+                        if (!this.hasVoted) {
+                            this.openVoteModal(candidateId);
+                        }
+                    });
+                });
+
+                // Update carousel position
+                this.updateCarousel3D();
+
+                // Render dots
+                dotsContainer.innerHTML = this.candidates.map((_, index) => `
+                    <button 
+                        class="w-4 h-4 rounded-full transition-all duration-300 ${index === this.currentSlide ? 'bg-white scale-125' : 'bg-white/40'}"
+                        onclick="votingApp.goToSlide(${index})"
+                    ></button>
+                `).join('');
+            }
+
+
+
+            openVoteModal(candidateId) {
+                if (this.hasVoted) return;
+                
+                const candidate = this.candidates.find(c => c.id === candidateId);
+                if (candidate) {
+                    this.selectedCandidateId = candidateId;
+                    document.getElementById('selectedCandidate').textContent = candidate.name;
+                    
+                    const modal = document.getElementById('confirmationModal');
+                    const modalContent = document.getElementById('modalContent');
+                    
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modalContent.classList.remove('scale-95');
+                        modalContent.classList.add('scale-100');
+                    }, 10);
+                }
+            }
+
+            closeModal() {
+                console.log('Closing modal...'); // Debug
+                const modal = document.getElementById('confirmationModal');
+                const modalContent = document.getElementById('modalContent');
+                
+                if (modal && modalContent) {
+                    modalContent.classList.remove('scale-100');
+                    modalContent.classList.add('scale-95');
+                    
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        this.selectedCandidateId = null;
+                        console.log('Modal closed'); // Debug
+                    }, 300);
+                }
+            }
+
+            confirmVote() {
+                if (!this.selectedCandidateId || this.hasVoted) return;
+                
+                const candidate = this.candidates.find(c => c.id === this.selectedCandidateId);
+                if (candidate) {
+                    candidate.votes++;
+                    this.hasVoted = true;
+                    this.stopAutoCarousel();
+                    this.closeModal();
+                    this.renderCandidates();
+                    this.renderResults();
+                    this.updateTotalVotes();
+                    this.showVoteConfirmation(candidate.name);
+                }
+            }
+
+            showVoteConfirmation(candidateName) {
+                const confirmation = document.createElement('div');
+                confirmation.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                confirmation.innerHTML = `¡Voto registrado para ${candidateName}!`;
+                document.body.appendChild(confirmation);
+                
+                setTimeout(() => {
+                    confirmation.remove();
+                }, 3000);
+            }
+
+            renderResults() {
+                const container = document.getElementById('resultsContainer');
+                const totalVotes = this.getTotalVotes();
+                
+                container.innerHTML = this.candidates.map((candidate, index) => {
+                    const percentage = totalVotes > 0 ? (candidate.votes / totalVotes * 100).toFixed(1) : 0;
+                    const isLeading = totalVotes > 0 && candidate.votes === Math.max(...this.candidates.map(c => c.votes));
+                    const colors = [
+                        'from-blue-400 to-blue-600',
+                        'from-green-400 to-green-600', 
+                        'from-purple-400 to-purple-600',
+                        'from-red-400 to-red-600'
+                    ];
+                    return `
+                        <div class="mb-4 p-4 rounded-lg ${isLeading && totalVotes > 0 ? 'bg-yellow-500/10 border border-yellow-400/30' : 'bg-white/5'}">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-gradient-to-br ${colors[index]} rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                    <span class="font-semibold text-white flex items-center space-x-2">
+                                        <span>${candidate.name}</span>
+                                        ${isLeading && totalVotes > 0 ? `
+                                            <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                            </svg>
+                                        ` : ''}
+                                    </span>
+                                </div>
+                                <div class="flex items-center space-x-2 text-white/80">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>${candidate.votes} votos (${percentage}%)</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                <div class="h-3 rounded-full transition-all duration-800 ease-in-out bg-gradient-to-r ${colors[index]} relative" 
+                                     style="width: ${percentage}%;">
+                                    ${percentage > 0 ? `
+                                        <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            getTotalVotes() {
+                return this.candidates.reduce((total, candidate) => total + candidate.votes, 0);
+            }
+
+            updateTotalVotes() {
+                document.getElementById('totalVotes').textContent = this.getTotalVotes();
+            }
+
+            resetVoting() {
+                this.candidates.forEach(candidate => candidate.votes = 0);
+                this.hasVoted = false;
+                this.renderCandidates();
+                this.renderResults();
+                this.updateTotalVotes();
+                this.startAutoCarousel();
+            }
+        }
+
+        // Initialize the voting app
+        const votingApp = new VotingApp();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'992b64894255c915',t:'MTc2MTE2MTI1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
