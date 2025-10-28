@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Votaciones Unison 2025</title>
+    <!-- Configura estas metas (o define window.SUPABASE_URL / window.SUPABASE_ANON_KEY) para conectar con Supabase -->
+    <meta name="supabase-url" content="https://slcewcigqiauczwknedt.supabase.co">
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsY2V3Y2lncWlhY3p3a25lZHQiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MTI3MTE5NywiZXhwIjoyMDc2ODQ3MTk3fQ.FDsk0JHxIqumSDb8VnHM9SaB8czrTZ5-hVfwb4ekwlA">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kodchasan:wght@200;300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
@@ -303,8 +306,80 @@
 
 <script>
   // ======== CONFIGURA AQUÍ TUS CREDENCIALES SUPABASE ========
-  const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-  const SUPABASE_ANON_KEY = "TU_ANON_KEY";
+  const DEFAULT_SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsY2V3Y2lncWlhY3p3a25lZHQiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MTI3MTE5NywiZXhwIjoyMDc2ODQ3MTk3fQ.FDsk0JHxIqumSDb8VnHM9SaB8czrTZ5-hVfwb4ekwlA";
+
+  function base64UrlDecode(segment) {
+    if (!segment) return null;
+    try {
+      const pad = segment.length % 4;
+      if (pad) segment += "=".repeat(4 - pad);
+      const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
+      return atob(normalized);
+    } catch (error) {
+      console.warn("No se pudo decodificar base64url de Supabase:", error);
+      return null;
+    }
+  }
+
+  function getSupabaseRefFromAnonKey(key) {
+    if (!key || typeof key !== "string") return null;
+    const parts = key.split(".");
+    if (parts.length < 2) return null;
+    try {
+      const payload = JSON.parse(base64UrlDecode(parts[1]) || "null");
+      return typeof payload?.ref === "string" ? payload.ref : null;
+    } catch (error) {
+      console.warn("No se pudo derivar el proyecto Supabase desde la anon key:", error);
+      return null;
+    }
+  }
+
+  const metaUrl = document.querySelector('meta[name="supabase-url"]')?.content?.trim();
+  const metaAnonKey = document
+    .querySelector('meta[name="supabase-anon-key"]')
+    ?.content?.trim();
+
+  const providedAnonKeyCandidate =
+    (typeof window !== "undefined" && window.SUPABASE_ANON_KEY) ||
+    metaAnonKey ||
+    DEFAULT_SUPABASE_ANON_KEY;
+
+  let providedAnonKey =
+    typeof providedAnonKeyCandidate === "string"
+      ? providedAnonKeyCandidate.trim()
+      : "";
+  if (!providedAnonKey) {
+    providedAnonKey = DEFAULT_SUPABASE_ANON_KEY;
+  }
+
+  const supabaseRef = getSupabaseRefFromAnonKey(providedAnonKey);
+  const derivedUrlFromKey = supabaseRef
+    ? `https://${supabaseRef}.supabase.co`
+    : null;
+
+  const providedUrlRaw =
+    (typeof window !== "undefined" && window.SUPABASE_URL) ||
+    metaUrl ||
+    "";
+
+  const sanitizedProvidedUrl = providedUrlRaw
+    ? providedUrlRaw.trim().replace(/\/?$/, "")
+    : "";
+
+  let finalSupabaseUrl = sanitizedProvidedUrl;
+  if (derivedUrlFromKey && sanitizedProvidedUrl && sanitizedProvidedUrl !== derivedUrlFromKey) {
+    console.warn(
+      "La URL de Supabase y la anon key no coinciden. Se usará la URL derivada del token para evitar errores de conexión."
+    );
+    finalSupabaseUrl = derivedUrlFromKey;
+  }
+  if (!finalSupabaseUrl) {
+    finalSupabaseUrl = derivedUrlFromKey || "https://slcewcigqiauczwknedt.supabase.co";
+  }
+
+  const SUPABASE_URL = finalSupabaseUrl;
+  const SUPABASE_ANON_KEY = providedAnonKey;
   // ==========================================================
 
   const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -754,8 +829,7 @@
     async syncCountsFromDB() {
       const { data, error } = await supa
         .from('votes')
-        .select('candidate_id, count:candidate_id(count)')
-        .group('candidate_id');
+        .select('candidate_id, count:count(*)', { group: 'candidate_id' });
       if (error) {
         this.toast('No se pudieron cargar resultados', 'error');
         return;
@@ -771,8 +845,15 @@
 
     async checkIfUserHasVoted() {
       if (!this.userId) { this.hasVoted = false; return; }
-      const { data, error } = await supa.from('votes').select('id').eq('user_id', this.userId).maybeSingle();
-      this.hasVoted = !!(data && !error);
+      const { data, error } = await supa
+        .from('votes')
+        .select('id')
+        .eq('user_id', this.userId)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') {
+        this.toast('No se pudo verificar tu voto previo', 'error');
+      }
+      this.hasVoted = Boolean(data);
       this.renderCandidates();
     }
 
