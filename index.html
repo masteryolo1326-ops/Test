@@ -2,26 +2,30 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>Votaciones UNISON — Prueba con Registro</title>
+  <title>Votaciones UNISON — Demo mínima (Registro + Login + Voto)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Supabase SDK v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: system-ui, sans-serif; margin: 20px; }
     fieldset { margin-bottom: 16px; }
-    label { display: block; margin: 6px 0; }
-    input { padding: 6px 8px; width: 260px; max-width: 100%; }
-    button { padding: 6px 10px; margin-right: 8px; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .hidden { display: none; }
-    table { border-collapse: collapse; margin-top: 12px; }
-    td, th { border: 1px solid #ccc; padding: 4px 8px; }
-    #toast { position: fixed; right: 12px; top: 12px; background:#333; color:#fff; padding:8px 12px; border-radius:6px; display:none; }
-    nav button[aria-current="page"] { font-weight: 700; text-decoration: underline; }
+    label { display:block; margin:6px 0; }
+    input { padding:6px 8px; width: 280px; max-width:100%; }
+    button { padding:6px 10px; margin-right:8px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .hidden { display:none; }
+    table { border-collapse:collapse; margin-top:12px; }
+    td, th { border:1px solid #ccc; padding:4px 8px; }
+    #toast { position:fixed; right:12px; top:12px; background:#333; color:#fff; padding:8px 12px; border-radius:6px; display:none; }
+    nav button[aria-current="page"] { font-weight:700; text-decoration:underline; }
+    .note { background:#fff7cc; border:1px solid #e5d66b; padding:8px 10px; border-radius:6px; margin:8px 0; }
   </style>
 </head>
 <body>
-  <h1>Votaciones UNISON — Demo funcional mínima (Registro + Login)</h1>
+  <h1>Votaciones UNISON — Demo mínima</h1>
+  <div class="note">
+    Dominio actual: <b id="dom"></b> · La app fuerza redirección de correo a: <code id="redir"></code>
+  </div>
   <div id="toast"></div>
 
   <nav class="row">
@@ -43,8 +47,9 @@
     </label>
     <div class="row">
       <button id="btnRegister">Registrarme</button>
+      <button id="btnResend">Reenviar confirmación</button>
     </div>
-    <small>Recibirás un correo de confirmación. Abre el enlace para activar tu cuenta y volver aquí.</small>
+    <small>Revisa tu correo y confirma la cuenta. Si ya existe, usa “Reenviar confirmación”.</small>
   </fieldset>
 
   <!-- LOGIN -->
@@ -87,7 +92,12 @@
 /** ========= CONFIG ========= **/
 const SUPABASE_URL = "https://slcewcigqiauczwknedt.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsY2V3Y2lncWlhdWN6d2tuZWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzExOTcsImV4cCI6MjA3Njg0NzE5N30.FDsk0JHxIqumSDb8VnHM9SaB8czrTZ5-hVfwb4ekwlA";
-const REDIRECT_URL = location.origin; // Ajusta si quieres una ruta específica
+
+/* Fuerza el redirect exacto a tu carpeta /Test/ */
+function getEmailRedirect() {
+  const base = "https://masteryolo1326-ops.github.io";
+  return base + "/Test/"; // <- aquí vive tu index.html
+}
 
 /** ========= SUPABASE (singleton) ========= **/
 (function ensureSingleton(){
@@ -121,8 +131,6 @@ function setTab(tab){
   $('tabRegister').setAttribute('aria-current', tab==='register' ? 'page' : 'false');
   $('tabLogin').setAttribute('aria-current', tab==='login' ? 'page' : 'false');
 }
-
-/** ========= UI ========= **/
 function show(section){
   const inApp = (section === 'app');
   $('app').classList.toggle('hidden', !inApp);
@@ -153,10 +161,11 @@ function renderResults(rows){
   }).join('');
 }
 
-/** ========= AUTH ========= **/
+/** ========= NAV ========= **/
 $('tabRegister').onclick = () => setTab('register');
 $('tabLogin').onclick = () => setTab('login');
 
+/** ========= AUTH ========= **/
 $('btnRegister').onclick = async () => {
   const email = $('r_email').value.trim();
   const p1 = $('r_pass1').value;
@@ -170,14 +179,31 @@ $('btnRegister').onclick = async () => {
     const { data, error } = await supa.auth.signUp({
       email,
       password: p1,
-      options: { emailRedirectTo: REDIRECT_URL }
+      options: { emailRedirectTo: getEmailRedirect() }
     });
     if (error) throw error;
-    toast('Registro enviado. Revisa tu correo y confirma la cuenta.');
+    toast('Registro enviado. Revisa tu correo y confirma.');
     setTab('login');
   } catch (e) {
     console.error(e);
     toast(e.message || 'No se pudo registrar');
+  }
+};
+
+$('btnResend').onclick = async () => {
+  const email = $('r_email').value.trim();
+  if (!isUnison(email)) return toast('Escribe tu correo @unison.mx primero');
+  try {
+    const { error } = await supa.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: getEmailRedirect() }
+    });
+    if (error) throw error;
+    toast('Enviamos un nuevo correo de confirmación (revisa spam).');
+  } catch (e) {
+    console.error(e);
+    toast(e.message || 'No se pudo reenviar');
   }
 };
 
@@ -202,7 +228,9 @@ $('btnRecover').onclick = async () => {
   const email = $('l_email').value.trim();
   if (!isUnison(email)) return toast('Escribe tu correo @unison.mx y vuelve a intentar');
   try {
-    const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: REDIRECT_URL });
+    const { error } = await supa.auth.resetPasswordForEmail(email, {
+      redirectTo: getEmailRedirect()
+    });
     if (error) throw error;
     toast('Correo de recuperación enviado');
   } catch (e) {
@@ -230,18 +258,18 @@ async function bootAfterAuth(){
   subscribe();
 }
 
-async function checkSessionOnLoad(){
-  // Captura retornos de enlaces de confirmación / recuperación
-  const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
-  const type = hash.get('type'); // e.g. 'recovery', 'invite', 'signup'
-  if (type) {
-    toast(`Estado Auth: ${type}`);
-  }
+/* Captura retornos de confirmación/recovery desde el email (hash) */
+async function handleAuthFromHash(){
+  const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const type = params.get('type'); // e.g. 'signup', 'recovery'
+  if (type) toast(`Estado Auth: ${type}`);
+  // Supabase maneja el intercambio de tokens automáticamente al cargar con el hash.
+  // Solo arrancamos la app después.
   await bootAfterAuth();
 }
 
 supa.auth.onAuthStateChange((_event, _session) => {
-  // no hacemos nada especial aquí; bootAfterAuth ya se encarga
+  // no-op; bootAfterAuth ya ejecuta la lógica principal
 });
 
 /** ========= DATA / RLS ========= **/
@@ -326,5 +354,8 @@ function unsubscribe(){
 if (location.protocol === 'file:') {
   console.warn('Sirve este archivo con http(s), no file://');
 }
-checkSessionOnLoad();
+document.getElementById('dom').textContent = location.origin + location.pathname;
+document.getElementById('redir').textContent = getEmailRedirect();
+
+handleAuthFromHash().catch(console.error);
 </script>
