@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="es" class="h-full">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Votaciones Unison 2025</title>
-    <!-- Configura estas metas (o define window.SUPABASE_URL / window.SUPABASE_ANON_KEY) para conectar con Supabase -->
-    <meta name="supabase-url" content="https://slcewcigqiauczwknedt.supabase.co">
-    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsY2V3Y2lncWlhY3p3a25lZHQiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MTI3MTE5NywiZXhwIjoyMDc2ODQ3MTk3fQ.FDsk0JHxIqumSDb8VnHM9SaB8czrTZ5-hVfwb4ekwlA">
+
+    <!-- URL y ANON KEY FIJAS: sin autodetección para evitar desajustes -->
+    <meta name="supabase-url" content="https://slcewcigqiauczwknedt.supabase.co" />
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsY2V3Y2lncWlhdWN6d2tuZWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNzExOTcsImV4cCI6MjA3Njg0NzE5N30.FDsk0JHxIqumSDb8VnHM9SaB8czrTZ5-hVfwb4ekwlA" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kodchasan:wght@200;300;400;500;600;700&display=swap" rel="stylesheet" />
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -181,9 +184,11 @@
                     <div class="flex items-center justify-center space-x-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <p>¿Olvidaste tu contraseña? 
-  <a href="#" id="recoverLink" class="text-blue-600 hover:underline flex items-center space-x-1">
-    <span>Recuperar</span>
-    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a></p>
+                          <a href="#" id="recoverLink" class="text-blue-600 hover:underline flex items-center space-x-1">
+                            <span>Recuperar</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                          </a>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -305,84 +310,27 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  // ======== CONFIGURA AQUÍ TUS CREDENCIALES SUPABASE ========
-  const DEFAULT_SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsY2V3Y2lncWlhY3p3a25lZHQiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MTI3MTE5NywiZXhwIjoyMDc2ODQ3MTk3fQ.FDsk0JHxIqumSDb8VnHM9SaB8czrTZ5-hVfwb4ekwlA";
-
-  function base64UrlDecode(segment) {
-    if (!segment) return null;
-    try {
-      const pad = segment.length % 4;
-      if (pad) segment += "=".repeat(4 - pad);
-      const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
-      return atob(normalized);
-    } catch (error) {
-      console.warn("No se pudo decodificar base64url de Supabase:", error);
-      return null;
+  // ========= SUPABASE CONFIG (FIJO/SEGURO EN FRONT) =========
+  const SUPABASE_URL = document.querySelector('meta[name="supabase-url"]').content.trim();
+  const SUPABASE_ANON_KEY = document.querySelector('meta[name="supabase-anon-key"]').content.trim();
+  const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    },
+    global: {
+      headers: { 'x-client-info': 'votaciones-unison-2025' }
     }
-  }
+  });
 
-  function getSupabaseRefFromAnonKey(key) {
-    if (!key || typeof key !== "string") return null;
-    const parts = key.split(".");
-    if (parts.length < 2) return null;
-    try {
-      const payload = JSON.parse(base64UrlDecode(parts[1]) || "null");
-      return typeof payload?.ref === "string" ? payload.ref : null;
-    } catch (error) {
-      console.warn("No se pudo derivar el proyecto Supabase desde la anon key:", error);
-      return null;
+  // Bloquea el uso desde file:// para evitar CORS y "Failed to fetch"
+  (function guardFileProtocol(){
+    if (location.protocol === 'file:') {
+      console.warn('Sirve este archivo con http://localhost para evitar CORS.');
     }
-  }
-
-  const metaUrl = document.querySelector('meta[name="supabase-url"]')?.content?.trim();
-  const metaAnonKey = document
-    .querySelector('meta[name="supabase-anon-key"]')
-    ?.content?.trim();
-
-  const providedAnonKeyCandidate =
-    (typeof window !== "undefined" && window.SUPABASE_ANON_KEY) ||
-    metaAnonKey ||
-    DEFAULT_SUPABASE_ANON_KEY;
-
-  let providedAnonKey =
-    typeof providedAnonKeyCandidate === "string"
-      ? providedAnonKeyCandidate.trim()
-      : "";
-  if (!providedAnonKey) {
-    providedAnonKey = DEFAULT_SUPABASE_ANON_KEY;
-  }
-
-  const supabaseRef = getSupabaseRefFromAnonKey(providedAnonKey);
-  const derivedUrlFromKey = supabaseRef
-    ? `https://${supabaseRef}.supabase.co`
-    : null;
-
-  const providedUrlRaw =
-    (typeof window !== "undefined" && window.SUPABASE_URL) ||
-    metaUrl ||
-    "";
-
-  const sanitizedProvidedUrl = providedUrlRaw
-    ? providedUrlRaw.trim().replace(/\/?$/, "")
-    : "";
-
-  let finalSupabaseUrl = sanitizedProvidedUrl;
-  if (derivedUrlFromKey && sanitizedProvidedUrl && sanitizedProvidedUrl !== derivedUrlFromKey) {
-    console.warn(
-      "La URL de Supabase y la anon key no coinciden. Se usará la URL derivada del token para evitar errores de conexión."
-    );
-    finalSupabaseUrl = derivedUrlFromKey;
-  }
-  if (!finalSupabaseUrl) {
-    finalSupabaseUrl = derivedUrlFromKey || "https://slcewcigqiauczwknedt.supabase.co";
-  }
-
-  const SUPABASE_URL = finalSupabaseUrl;
-  const SUPABASE_ANON_KEY = providedAnonKey;
+  })();
   // ==========================================================
-
-  const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   class VotingApp {
     constructor() {
@@ -400,6 +348,7 @@
       this.totalRotation = 0;
       this.userId = null;
       this.realtimeChannel = null;
+      this.carouselInterval = null;
 
       this.init();
     }
@@ -417,10 +366,15 @@
     }
 
     async handleExistingSession() {
-      const { data: { session } } = await supa.auth.getSession();
-      if (session?.user) {
-        this.userId = session.user.id;
-        await this.postLoginBoot();
+      try {
+        const { data: { session }, error } = await supa.auth.getSession();
+        if (error) console.error('getSession error:', error);
+        if (session?.user) {
+          this.userId = session.user.id;
+          await this.postLoginBoot();
+        }
+      } catch (e) {
+        console.error('handleExistingSession network/auth error:', e);
       }
     }
 
@@ -440,7 +394,6 @@
       const email = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
 
-      // Validaciones estrictas: dominio y contraseña requerida
       const emailError = document.getElementById('emailError');
       if (!this.isInstitutionalEmail(email)) {
         emailError.classList.remove('hidden');
@@ -455,15 +408,14 @@
       }
 
       try {
-        // SOLO contraseña — NO magic link
         const { data, error } = await supa.auth.signInWithPassword({ email, password });
         if (error) throw error;
         this.toast('¡Acceso autorizado! Redirigiendo...', 'success');
-        // postLoginBoot se dispara por onAuthStateChange
+        // onAuthStateChange disparará postLoginBoot
       } catch (err) {
-        // Errores comunes: invalid-credentials, email-not-confirmed
         const msg = (err && err.message) ? err.message : 'Error de autenticación';
         this.toast(msg, 'error');
+        console.error('signInWithPassword error:', err);
       }
     }
 
@@ -471,10 +423,15 @@
       this.showLoginSuccess();
       setTimeout(async () => {
         this.animateToVoting();
-        await this.syncCountsFromDB();
-        await this.checkIfUserHasVoted();
-        this.initVotingSystem();
-        this.subscribeRealtimeVotes();
+        try {
+          await this.syncCountsFromDB();
+          await this.checkIfUserHasVoted();
+          this.initVotingSystem();
+          this.subscribeRealtimeVotes();
+        } catch (e) {
+          console.error('postLoginBoot error:', e);
+          this.toast('Problema al cargar datos iniciales', 'error');
+        }
       }, 800);
     }
 
@@ -500,12 +457,13 @@
           }
           try {
             const { error } = await supa.auth.resetPasswordForEmail(email, {
-              redirectTo: window.location.href // configura esta URL en Auth → URL Configuration
+              redirectTo: window.location.origin // agrega este origen en Auth → URL Configuration
             });
             if (error) throw error;
             this.toast('Te enviamos un correo para restablecer tu contraseña.', 'success');
           } catch (err) {
             this.toast(err.message || 'No se pudo iniciar la recuperación', 'error');
+            console.error('resetPasswordForEmail error:', err);
           }
         });
       }
@@ -822,54 +780,75 @@
         this.showVoteConfirmation(this.candidates.find(c => c.id === this.selectedCandidateId)?.name || 'candidato');
       } catch (err) {
         this.toast(err.message || 'No se pudo registrar el voto', 'error');
+        console.error('insert vote error:', err);
       }
     }
 
     // ======== DB / REALTIME ========
     async syncCountsFromDB() {
-      const { data, error } = await supa
-        .from('votes')
-        .select('candidate_id, count:count(*)', { group: 'candidate_id' });
-      if (error) {
-        this.toast('No se pudieron cargar resultados', 'error');
-        return;
+      try {
+        const query = supa
+          .from('votes')
+          .select('candidate_id, count:count')
+          .group('candidate_id');
+
+        const { data, error } = await query;
+
+        if (error) {
+          this.toast('No se pudieron cargar resultados', 'error');
+          console.error('syncCountsFromDB error:', error);
+          return;
+        }
+        this.candidates.forEach(c => c.votes = 0);
+        (data || []).forEach(row => {
+          const c = this.candidates.find(x => x.id === row.candidate_id);
+          if (c) c.votes = row.count || 0;
+        });
+        this.renderResults();
+        this.updateTotalVotes();
+      } catch (e) {
+        console.error('syncCountsFromDB network error:', e);
+        this.toast('Fallo de red al cargar resultados', 'error');
       }
-      this.candidates.forEach(c => c.votes = 0);
-      (data || []).forEach(row => {
-        const c = this.candidates.find(x => x.id === row.candidate_id);
-        if (c) c.votes = row.count;
-      });
-      this.renderResults();
-      this.updateTotalVotes();
     }
 
     async checkIfUserHasVoted() {
       if (!this.userId) { this.hasVoted = false; return; }
-      const { data, error } = await supa
-        .from('votes')
-        .select('id')
-        .eq('user_id', this.userId)
-        .maybeSingle();
-      if (error && error.code !== 'PGRST116') {
-        this.toast('No se pudo verificar tu voto previo', 'error');
+      try {
+        const { data, error } = await supa
+          .from('votes')
+          .select('id')
+          .eq('user_id', this.userId)
+          .maybeSingle();
+        if (error && error.code !== 'PGRST116') {
+          this.toast('No se pudo verificar tu voto previo', 'error');
+          console.error('checkIfUserHasVoted error:', error);
+        }
+        this.hasVoted = Boolean(data);
+        this.renderCandidates();
+      } catch (e) {
+        console.error('checkIfUserHasVoted network error:', e);
+        this.toast('Fallo de red al verificar voto', 'error');
       }
-      this.hasVoted = Boolean(data);
-      this.renderCandidates();
     }
 
     subscribeRealtimeVotes() {
-      if (this.realtimeChannel) {
-        supa.removeChannel(this.realtimeChannel);
-        this.realtimeChannel = null;
+      try {
+        if (this.realtimeChannel) {
+          supa.removeChannel(this.realtimeChannel);
+          this.realtimeChannel = null;
+        }
+        this.realtimeChannel = supa
+          .channel('votes-stream')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, async () => {
+            await this.syncCountsFromDB();
+          })
+          .subscribe((status) => {
+            // status es 'SUBSCRIBED' si OK
+          });
+      } catch (e) {
+        console.error('subscribeRealtimeVotes error:', e);
       }
-      this.realtimeChannel = supa
-        .channel('votes-stream')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, async () => {
-          await this.syncCountsFromDB();
-        })
-        .subscribe(() => {
-          this.syncCountsFromDB();
-        });
     }
 
     // ======== RESULTADOS ========
@@ -932,9 +911,6 @@
   const votingApp = new VotingApp();
 </script>
 
-
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'992b64894255c915',t:'MTc2MTE2MTI1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-
 <!--
 ==========================
 SQL PARA SUPABASE (RLS ON)
@@ -957,7 +933,7 @@ on public.votes for insert
 to authenticated
 with check (auth.uid() = user_id);
 
--- Política: cualquiera autenticado puede ver conteos (lectura abierta)
+-- Política: lectura para autenticados (para conteos en tiempo real)
 create policy "read votes"
 on public.votes for select
 to authenticated
@@ -967,8 +943,9 @@ using (true);
 create policy "no updates" on public.votes for update to authenticated using (false) with check (false);
 create policy "no deletes" on public.votes for delete to authenticated using (false);
 
--- Configurar envío de correos de confirmación en Auth > Providers > Email
--- y agregar la URL de redirección (emailRedirectTo) permitida en Auth > URL Configuration.
+-- En Auth > URL Configuration:
+--  - Site URL: http://localhost:5173  (o el puerto que uses)
+--  - Additional Redirect URLs: http://localhost:5173
 -->
 </body>
 </html>
