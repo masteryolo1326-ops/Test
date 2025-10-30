@@ -403,9 +403,22 @@
     // Si quieres que tras confirmar correo vaya a una página específica, ponla aquí:
     const EMAIL_REDIRECT = "https://masteryolo1326-ops.github.io/Test/"; // o login.html si lo separas
 
-    const supa = supabase.createClient(finalSupabaseUrl, providedAnonKey, {
-      auth: { persistSession: true, detectSessionInUrl: true }
-    });
+   const supa = supabase.createClient(finalSupabaseUrl, providedAnonKey, {
+  global: {
+    headers: {
+      apikey: providedAnonKey,
+      Authorization: `Bearer ${providedAnonKey}`,
+    },
+  },
+  auth: {
+    persistSession: true,
+    detectSessionInUrl: true,
+    autoRefreshToken: true,
+    // opcional pero útil para evitar el warning de múltiples clientes:
+    storageKey: 'unison-votes-auth'
+  },
+});
+
 
     // ====== App ======
     class VotingApp {
